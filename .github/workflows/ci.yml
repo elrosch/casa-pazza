@@ -27,7 +27,17 @@ jobs:
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
+      - name: Start PocketBase with repo schema
+        run: |
+          PB_VERSION=$(sed -n 's/^ARG PB_VERSION=//p' server/Dockerfile)
+          curl -sSfL -o /tmp/pb.zip "https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip"
+          unzip -q /tmp/pb.zip pocketbase -d /tmp/pb
+          /tmp/pb/pocketbase serve --http=127.0.0.1:8090 --dir=/tmp/pb_data \
+            --migrationsDir=server/pb_migrations --hooksDir=server/pb_hooks > /tmp/pb.log 2>&1 &
+          for i in $(seq 1 40); do curl -sf http://127.0.0.1:8090/api/health && break; sleep 0.25; done
       - run: flutter test
+        env:
+          PB_TEST_URL: http://127.0.0.1:8090
 
   build-android:
     name: Build Android
