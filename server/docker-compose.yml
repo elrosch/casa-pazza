@@ -1,0 +1,16 @@
+# PocketBase sync backend for Casa Pazza.
+# Portainer: Stacks → Add stack → Repository, compose path "server/docker-compose.yml".
+# First start: open the installer link from the container logs to create the superuser.
+
+services:
+  pocketbase:
+    image: ghcr.io/elrosch/casa-pazza-pocketbase:latest
+    container_name: casa-pazza-pocketbase
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    volumes:
+      - pb_data:/pb_data
+
+volumes:
+  pb_data:
