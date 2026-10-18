@@ -99,8 +99,20 @@ void main() {
       final benMembers = await ben.db.select(ben.db.members).get();
       expect(benMembers.map((m) => m.name), unorderedEquals(['Anna', 'Ben']));
 
-      // Anna creates a recurring task for Ben.
-      final listId = await anna.tasks.createList('Haushalt');
+      // Both devices got the same default lists, no duplicates.
+      for (final device in [anna, ben]) {
+        final taskLists = await device.db.select(device.db.taskLists).get();
+        expect(taskLists.map((l) => (l.id, l.name)), [
+          (household.id, 'Aufgaben'),
+        ]);
+        final shopLists = await device.db.select(device.db.shoppingLists).get();
+        expect(shopLists.map((l) => (l.id, l.name)), [
+          (household.id, 'Einkauf'),
+        ]);
+      }
+
+      // Anna creates a recurring task for Ben in a second list.
+      final listId = await anna.tasks.createList('Garten');
       await anna.tasks.saveTask(
         listId: listId,
         title: 'Müll rausbringen',
@@ -120,9 +132,11 @@ void main() {
       expect(benTasks.single.assignee, ben.userId);
       expect(benTasks.single.repeatUnit, 'week');
 
-      // Ben completes it: it stays open and moves to the next week.
+      // Ben completes it: it stays open and moves on by one week.
       final next = await ben.tasks.complete(benTasks.single);
-      expect(next, isNotNull);
+      // Overdue since 1.10. – next due date counts from today.
+      final now = DateTime.now();
+      expect(next, DateTime(now.year, now.month, now.day + 7));
       await ben.sync();
       await anna.sync();
       final annaTask = await anna.db.select(anna.db.tasks).getSingle();
@@ -131,7 +145,7 @@ void main() {
       expect(annaTask.doneBy, ben.userId);
 
       // Shopping list round trip including check-off and deletion.
-      final shopId = await ben.shopping.createList('Supermarkt');
+      final shopId = household.id;
       await ben.shopping.addItem(shopId, 'Milch', quantity: '2 l');
       await ben.shopping.addItem(shopId, 'Brot');
       await ben.sync();
@@ -158,8 +172,10 @@ void main() {
         anna.db.shoppingItems,
       )..where((i) => i.deleted.not())).get();
       expect(visibleItems.map((i) => i.name), ['Brot']);
-      final annaLists = await anna.db.select(anna.db.taskLists).get();
-      expect(annaLists.single.deleted, isTrue);
+      final garden = await (anna.db.select(
+        anna.db.taskLists,
+      )..where((l) => l.id.equals(listId))).getSingle();
+      expect(garden.deleted, isTrue);
 
       // Pending local edits win over older server state during pull.
       await anna.shopping.updateItem(

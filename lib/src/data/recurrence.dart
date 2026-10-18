@@ -62,18 +62,11 @@ DateTime _addMonths(DateTime date, int months) {
 
 /// Next due date after completing a recurring task on [now].
 ///
-/// Advances from the current due date (or today) until the date lies after
-/// today, so an overdue weekly task does not pile up missed occurrences.
+/// The interval counts from the day of completion, regardless of whether the
+/// task was done early, on time or late: "every 3 days" means 3 days after
+/// it was last done.
 DateTime nextDueDate({
-  required DateTime? due,
   required RepeatUnit unit,
   required int every,
   required DateTime now,
-}) {
-  final today = DateTime(now.year, now.month, now.day);
-  var next = addRecurrence(due ?? today, unit, every);
-  while (!next.isAfter(today)) {
-    next = addRecurrence(next, unit, every);
-  }
-  return next;
-}
+}) => addRecurrence(DateTime(now.year, now.month, now.day), unit, every);

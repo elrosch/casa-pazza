@@ -21,49 +21,28 @@ void main() {
     });
   });
 
-  group('nextDueDate', () {
+  group('nextDueDate counts from the completion day', () {
     final now = DateTime(2026, 10, 17, 18);
+    DateTime next(RepeatUnit unit, int every) =>
+        nextDueDate(unit: unit, every: every, now: now);
 
-    test('moves on from the current due date', () {
-      expect(
-        nextDueDate(
-          due: DateTime(2026, 10, 17),
-          unit: RepeatUnit.week,
-          every: 1,
-          now: now,
-        ),
-        DateTime(2026, 10, 24),
-      );
+    test('every 3 days, done today', () {
+      expect(next(RepeatUnit.day, 3), DateTime(2026, 10, 20));
     });
 
-    test('skips missed occurrences of overdue tasks', () {
-      expect(
-        nextDueDate(
-          due: DateTime(2026, 9, 1),
-          unit: RepeatUnit.week,
-          every: 1,
-          now: now,
-        ),
-        DateTime(2026, 10, 20),
-      );
+    test('weekly and monthly from today', () {
+      expect(next(RepeatUnit.week, 1), DateTime(2026, 10, 24));
+      expect(next(RepeatUnit.month, 1), DateTime(2026, 11, 17));
     });
 
-    test('completing early keeps the schedule', () {
+    test('ignores the time of day', () {
       expect(
         nextDueDate(
-          due: DateTime(2026, 10, 20),
-          unit: RepeatUnit.month,
+          unit: RepeatUnit.day,
           every: 1,
-          now: now,
+          now: DateTime(2026, 10, 17, 23, 59),
         ),
-        DateTime(2026, 11, 20),
-      );
-    });
-
-    test('starts from today without due date', () {
-      expect(
-        nextDueDate(due: null, unit: RepeatUnit.day, every: 2, now: now),
-        DateTime(2026, 10, 19),
+        DateTime(2026, 10, 18),
       );
     });
   });

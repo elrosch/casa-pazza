@@ -6,10 +6,8 @@ import '../data/auth.dart';
 import '../features/auth/login_screen.dart';
 import '../features/household/household_setup_screen.dart';
 import '../features/settings/settings_screen.dart';
-import '../features/shopping/shopping_list_screen.dart';
-import '../features/shopping/shopping_lists_screen.dart';
-import '../features/tasks/task_list_screen.dart';
-import '../features/tasks/task_lists_screen.dart';
+import '../features/shopping/shopping_screen.dart';
+import '../features/tasks/tasks_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -17,9 +15,6 @@ abstract final class AppRoutes {
   static const tasks = '/tasks';
   static const shopping = '/shopping';
   static const settings = '/settings';
-
-  static String taskList(String id) => '$tasks/$id';
-  static String shoppingList(String id) => '$shopping/$id';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -34,6 +29,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: AppRoutes.tasks,
     refreshListenable: refresh,
+    // Unknown locations (e.g. stray deep links) fall back to the tasks tab.
+    onException: (context, state, router) => router.go(AppRoutes.tasks),
     redirect: (context, state) {
       final auth = ref.read(authProvider);
       final location = state.matchedLocation;
@@ -45,9 +42,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             ? null
             : AppRoutes.householdSetup;
       }
-      if (location == AppRoutes.login || location == AppRoutes.householdSetup) {
-        return AppRoutes.tasks;
-      }
+      const tabs = [AppRoutes.tasks, AppRoutes.shopping, AppRoutes.settings];
+      if (!tabs.contains(location)) return AppRoutes.tasks;
       return null;
     },
     routes: [
@@ -66,14 +62,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.tasks,
-                builder: (context, state) => const TaskListsScreen(),
-                routes: [
-                  GoRoute(
-                    path: ':listId',
-                    builder: (context, state) =>
-                        TaskListScreen(listId: state.pathParameters['listId']!),
-                  ),
-                ],
+                builder: (context, state) => const TasksScreen(),
               ),
             ],
           ),
@@ -81,15 +70,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.shopping,
-                builder: (context, state) => const ShoppingListsScreen(),
-                routes: [
-                  GoRoute(
-                    path: ':listId',
-                    builder: (context, state) => ShoppingListScreen(
-                      listId: state.pathParameters['listId']!,
-                    ),
-                  ),
-                ],
+                builder: (context, state) => const ShoppingScreen(),
               ),
             ],
           ),

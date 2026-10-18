@@ -98,7 +98,14 @@ class SyncCursors extends Table {
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
-    : super(executor ?? driftDatabase(name: 'casa_pazza'));
+    : super(
+        executor ??
+            driftDatabase(
+              name: 'casa_pazza',
+              // The home screen widget writes from a background isolate.
+              native: const DriftNativeOptions(shareAcrossIsolates: true),
+            ),
+      );
 
   @override
   int get schemaVersion => 1;

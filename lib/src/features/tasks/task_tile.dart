@@ -8,12 +8,9 @@ import '../../data/repositories.dart';
 import 'task_editor.dart';
 
 class TaskTile extends ConsumerWidget {
-  const TaskTile({super.key, required this.task, this.listName});
+  const TaskTile({super.key, required this.task});
 
   final TaskRow task;
-
-  /// Shown in the subtitle when tasks of several lists are mixed.
-  final String? listName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,7 +20,6 @@ class TaskTile extends ConsumerWidget {
     final due = task.due;
 
     final details = <InlineSpan>[
-      if (listName != null) TextSpan(text: listName),
       if (due != null)
         TextSpan(
           text: formatDueDate(due),

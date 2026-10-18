@@ -30,6 +30,29 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <receiver
+            android:name=".TasksWidgetReceiver"
+            android:exported="true"
+            android:label="@string/tasks_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/tasks_widget_info" />
+        </receiver>
+        <!-- Widget launch URIs (casapazza://…) are handled by home_widget, not as routes. -->
+        <meta-data
+            android:name="flutter_deeplinking_enabled"
+            android:value="false" />
+        <!-- Runs widgetBackgroundCallback for widget checkbox taps. -->
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
+            </intent-filter>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

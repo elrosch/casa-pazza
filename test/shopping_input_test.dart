@@ -1,4 +1,4 @@
-import 'package:casa_pazza/src/features/shopping/shopping_list_screen.dart';
+import 'package:casa_pazza/src/features/shopping/shopping_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -158,3 +158,54 @@ String formatDueDate(DateTime due, {DateTime? now}) {
 
 bool isOverdue(DateTime due, {DateTime? now}) =>
     DateUtils.dateOnly(due).isBefore(DateUtils.dateOnly(now ?? DateTime.now()));
+
+/// Text field at the top of a list for adding entries with the keyboard.
+class QuickAddField extends StatefulWidget {
+  const QuickAddField({super.key, required this.hint, required this.onAdd});
+
+  final String hint;
+  final ValueChanged<String> onAdd;
+
+  @override
+  State<QuickAddField> createState() => _QuickAddFieldState();
+}
+
+class _QuickAddFieldState extends State<QuickAddField> {
+  final _controller = TextEditingController();
+  final _focus = FocusNode();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    _controller.clear();
+    // Keep the keyboard open for the next entry.
+    _focus.requestFocus();
+    widget.onAdd(text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+      child: TextField(
+        controller: _controller,
+        focusNode: _focus,
+        textCapitalization: TextCapitalization.sentences,
+        textInputAction: TextInputAction.done,
+        decoration: InputDecoration(
+          hintText: widget.hint,
+          prefixIcon: const Icon(Icons.add),
+          border: InputBorder.none,
+        ),
+        onSubmitted: (_) => _submit(),
+      ),
+    );
+  }
+}

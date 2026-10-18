@@ -9,6 +9,9 @@ import 'package:pocketbase/pocketbase.dart';
 import '../auth.dart';
 import '../db/database.dart';
 
+const defaultTaskListName = 'Aufgaben';
+const defaultShoppingListName = 'Einkauf';
+
 enum SyncPhase { idle, syncing, offline, error }
 
 @immutable
@@ -270,6 +273,7 @@ class SyncService {
       for (final c in _collections) {
         await _pull(c);
       }
+      if (await _ensureDefaultLists()) await _push();
       await _ensureRealtime();
       _lastSync = DateTime.now();
       onStatus(SyncStatus(SyncPhase.idle, lastSync: _lastSync));
@@ -353,6 +357,54 @@ class SyncService {
         await db.into(c.table).insertOnConflictUpdate(c.fromRecord(saved));
       }
     });
+  }
+
+  /// Every household has one task list and one shopping list to start with.
+  ///
+  /// Runs only after a successful pull, so it never shadows lists that exist
+  /// on the server. The default lists reuse the household id: devices that
+  /// create them concurrently end up with the same record instead of two.
+  Future<bool> _ensureDefaultLists() async {
+    var created = false;
+    final hasTaskList =
+        await (db.select(db.taskLists)
+              ..where((l) => l.deleted.not())
+              ..limit(1))
+            .getSingleOrNull();
+    if (hasTaskList == null) {
+      await db
+          .into(db.taskLists)
+          .insertOnConflictUpdate(
+            TaskListsCompanion.insert(
+              id: householdId,
+              household: householdId,
+              name: defaultTaskListName,
+              deleted: const Value(false),
+              dirty: const Value(true),
+            ),
+          );
+      created = true;
+    }
+    final hasShoppingList =
+        await (db.select(db.shoppingLists)
+              ..where((l) => l.deleted.not())
+              ..limit(1))
+            .getSingleOrNull();
+    if (hasShoppingList == null) {
+      await db
+          .into(db.shoppingLists)
+          .insertOnConflictUpdate(
+            ShoppingListsCompanion.insert(
+              id: householdId,
+              household: householdId,
+              name: defaultShoppingListName,
+              deleted: const Value(false),
+              dirty: const Value(true),
+            ),
+          );
+      created = true;
+    }
+    return created;
   }
 
   Future<void> _pullHousehold() async {

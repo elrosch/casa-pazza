@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tasks_widget_label">Aufgaben</string>
+    <string name="tasks_widget_description">Offene Aufgaben im Überblick und schnell neue hinzufügen</string>
+</resources>

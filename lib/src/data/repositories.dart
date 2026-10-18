@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth.dart';
 import 'db/database.dart';
@@ -47,6 +48,40 @@ extension MemberNames on List<MemberRow> {
 }
 
 // ---------------------------------------------------------------------------
+// List selection
+// ---------------------------------------------------------------------------
+
+/// Remembers the list shown in a tab ("tasks" or "shopping") across restarts.
+final selectedListIdProvider =
+    NotifierProvider.family<SelectedListId, String?, String>(
+      SelectedListId.new,
+    );
+
+class SelectedListId extends Notifier<String?> {
+  SelectedListId(this.tab);
+
+  final String tab;
+
+  SharedPreferences get _prefs => ref.read(prefsProvider);
+  String get _key => 'selected_list_$tab';
+
+  @override
+  String? build() => _prefs.getString(_key);
+
+  void select(String id) {
+    _prefs.setString(_key, id);
+    state = id;
+  }
+}
+
+/// The selected list if it still exists, otherwise the first one.
+T? resolveSelectedList<T>(
+  List<T> lists,
+  String? selectedId,
+  String Function(T) idOf,
+) => lists.where((l) => idOf(l) == selectedId).firstOrNull ?? lists.firstOrNull;
+
+// ---------------------------------------------------------------------------
 // Tasks
 // ---------------------------------------------------------------------------
 
@@ -73,31 +108,6 @@ final tasksOfListProvider = StreamProvider.family<List<TaskRow>, String>((
         ..where((t) => t.list.equals(listId) & t.deleted.not())
         ..orderBy(_taskOrder))
       .watch();
-});
-
-/// Open tasks assigned to the current user, across all lists.
-final myTasksProvider = StreamProvider<List<TaskRow>>((ref) {
-  final db = ref.watch(databaseProvider);
-  final userId = ref.watch(authProvider.select((a) => a.userId));
-  return (db.select(db.tasks)
-        ..where(
-          (t) => t.assignee.equals(userId) & t.deleted.not() & t.done.not(),
-        )
-        ..orderBy(_taskOrder))
-      .watch();
-});
-
-/// Number of open tasks per list id.
-final openTaskCountsProvider = StreamProvider<Map<String, int>>((ref) {
-  final db = ref.watch(databaseProvider);
-  final count = db.tasks.id.count();
-  final query = db.selectOnly(db.tasks)
-    ..addColumns([db.tasks.list, count])
-    ..where(db.tasks.deleted.not() & db.tasks.done.not())
-    ..groupBy([db.tasks.list]);
-  return query.watch().map(
-    (rows) => {for (final r in rows) r.read(db.tasks.list)!: r.read(count)!},
-  );
 });
 
 final _taskOrder = <OrderClauseGenerator<$TasksTable>>[
@@ -188,12 +198,7 @@ class TasksRepository extends _Repository {
     final now = DateTime.now();
     DateTime? next;
     if (unit != null) {
-      next = nextDueDate(
-        due: task.due,
-        unit: unit,
-        every: task.repeatEvery,
-        now: now,
-      );
+      next = nextDueDate(unit: unit, every: task.repeatEvery, now: now);
     }
     await (db.update(db.tasks)..where((t) => t.id.equals(task.id))).write(
       TasksCompanion(
@@ -251,20 +256,6 @@ final shoppingItemsProvider =
             ]))
           .watch();
     });
-
-final openItemCountsProvider = StreamProvider<Map<String, int>>((ref) {
-  final db = ref.watch(databaseProvider);
-  final count = db.shoppingItems.id.count();
-  final query = db.selectOnly(db.shoppingItems)
-    ..addColumns([db.shoppingItems.list, count])
-    ..where(db.shoppingItems.deleted.not() & db.shoppingItems.checked.not())
-    ..groupBy([db.shoppingItems.list]);
-  return query.watch().map(
-    (rows) => {
-      for (final r in rows) r.read(db.shoppingItems.list)!: r.read(count)!,
-    },
-  );
-});
 
 class ShoppingRepository extends _Repository {
   ShoppingRepository(super.ref);

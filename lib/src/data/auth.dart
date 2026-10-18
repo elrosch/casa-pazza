@@ -107,8 +107,10 @@ class AuthController extends Notifier<AuthState> {
   Future<void> refreshUser() async {
     try {
       final auth = await state.pb.collection('users').authRefresh();
+      if (!ref.mounted) return;
       await _setUser(auth.record);
     } on ClientException catch (e) {
+      if (!ref.mounted) return;
       if (e.statusCode == 401 || e.statusCode == 403) await logout();
     }
   }
