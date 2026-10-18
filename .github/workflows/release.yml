@@ -1,8 +1,10 @@
 name: Release
 
+# Publishing a GitHub Release with a tag like v1.2.3 builds an APK with that
+# version and attaches it to the release.
 on:
-  push:
-    tags: ['v*']
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -12,10 +14,35 @@ env:
 
 jobs:
   android:
-    name: Android Release
+    name: Android APK
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      # v1.2.3 → versionName 1.2.3, versionCode 1002003. The code grows with
+      # every higher version, so Android installs releases as updates.
+      - name: Derive version from tag
+        id: version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION="${TAG#v}"
+          if ! [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Release tag '$TAG' must look like v1.2.3 (optionally v1.2.3-beta.1)"
+            exit 1
+          fi
+          MAJOR=${BASH_REMATCH[1]} MINOR=${BASH_REMATCH[2]} PATCH=${BASH_REMATCH[3]}
+          if (( MINOR > 999 || PATCH > 999 )); then
+            echo "::error::Minor and patch version must be below 1000"
+            exit 1
+          fi
+          CODE=$(( MAJOR * 1000000 + MINOR * 1000 + PATCH ))
+          echo "name=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "Building version $VERSION ($CODE)"
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -28,7 +55,7 @@ jobs:
           cache: true
       - run: flutter test
 
-      # Optional: without these secrets the release is signed with debug keys.
+      # Optional: without these secrets the APK is signed with debug keys.
       - name: Set up signing
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -45,16 +72,18 @@ jobs:
           keyPassword=$KEY_PASSWORD
           EOF
 
-      - name: Build
+      - name: Build APK
+        env:
+          TAG: ${{ github.event.release.tag_name }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          flutter build apk --release --build-name="$VERSION" --build-number="$GITHUB_RUN_NUMBER"
-          flutter build appbundle --release --build-name="$VERSION" --build-number="$GITHUB_RUN_NUMBER"
+          flutter build apk --release \
+            --build-name="${{ steps.version.outputs.name }}" \
+            --build-number="${{ steps.version.outputs.code }}"
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk "dist/casa-pazza-$GITHUB_REF_NAME.apk"
-          cp build/app/outputs/bundle/release/app-release.aab "dist/casa-pazza-$GITHUB_REF_NAME.aab"
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/casa-pazza-$TAG.apk"
 
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
-          generate_release_notes: true
+      - name: Attach APK to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" dist/*.apk --clobber --repo "$GITHUB_REPOSITORY"

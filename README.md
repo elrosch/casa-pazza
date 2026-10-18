@@ -339,17 +339,34 @@ configured in the system settings of the app.
 |--------------------|---------------------------------|--------------------------------------------------------------------------------------------------|
 | `ci.yml`           | Push to `main`, pull requests   | Format check, `flutter analyze`, Go vet/tests, Flutter tests incl. sync test against the Go server, Android debug APK, unsigned iOS build |
 | `server-image.yml` | Changes in `server/`, `v*` tags | Builds the multi-arch server image and pushes it to GHCR (`latest`, `sha-…`, version tags)        |
-| `release.yml`      | `v*` tags                       | Builds a release APK and AAB and attaches them to a GitHub Release                               |
+| `release.yml`      | Published GitHub Release        | Builds an APK versioned after the release tag and attaches it to the release                     |
 
 ### Releases
 
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
+1. On GitHub open *Releases → Draft a new release*.
+2. Create a new tag like `v1.2.0` (format `vMAJOR.MINOR.PATCH`, optionally
+   with a suffix such as `v1.3.0-beta.1`), write release notes and click
+   **Publish release**.
+3. The `release.yml` workflow builds `casa-pazza-v1.2.0.apk` and attaches it
+   to the release a few minutes later.
 
-Without signing secrets the release is signed with debug keys. For a
-properly signed release add these repository secrets:
+The version comes from the tag: `versionName` is `1.2.0` and `versionCode`
+is `MAJOR * 1000000 + MINOR * 1000 + PATCH` (here `1002000`), so every
+higher version installs as an update over the previous one. Minor and patch
+must stay below 1000. A suffix only changes the name, so `v1.3.0-beta.1`
+and `v1.3.0` share the same code; install the final version over the beta
+by uninstalling first, or bump the patch version instead.
+
+Tags pushed without a release do not build an APK. The workflow file is
+taken from the tagged commit, so it applies to tags created after this
+workflow was added.
+
+**Set up signing before the first release you hand out.** Without signing
+secrets every CI run signs with a freshly generated debug key, so Android
+refuses to install the next release over the previous one (signature
+mismatch). Add these repository secrets (*Settings → Secrets and variables →
+Actions*) and keep the keystore safe; all future releases must be signed
+with the same key:
 
 | Secret                       | Content                                  |
 |------------------------------|------------------------------------------|
@@ -357,6 +374,11 @@ properly signed release add these repository secrets:
 | `ANDROID_KEYSTORE_PASSWORD`  | Keystore password                        |
 | `ANDROID_KEY_ALIAS`          | Key alias                                |
 | `ANDROID_KEY_PASSWORD`       | Key password                             |
+
+Create a keystore once, e.g. with
+`keytool -genkeypair -keystore casa-pazza-release.keystore -alias casa-pazza -keyalg RSA -keysize 4096 -validity 10000`,
+and store its base64 form (`base64 -w0 casa-pazza-release.keystore`) as
+`ANDROID_KEYSTORE_BASE64`.
 
 Locally, the same signing config is read from `android/key.properties`
 (ignored by git).
