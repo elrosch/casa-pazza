@@ -72,6 +72,13 @@ jobs:
           keyPassword=$KEY_PASSWORD
           EOF
 
+      # Optional: without it the APK works, but push notifications are off.
+      - name: Add Firebase config
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        if: env.GOOGLE_SERVICES_JSON != ''
+        run: printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+
       - name: Build APK
         env:
           TAG: ${{ github.event.release.tag_name }}

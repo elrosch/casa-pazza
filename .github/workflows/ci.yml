@@ -69,16 +69,3 @@ jobs:
           name: app-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
-
-  build-ios:
-    name: Build iOS (unsigned)
-    needs: check
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-      - run: flutter build ios --debug --no-codesign

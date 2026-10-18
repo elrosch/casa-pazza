@@ -139,8 +139,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       ExpansionTile(
                         tilePadding: EdgeInsets.zero,
+                        initiallyExpanded: _server.text.isEmpty,
                         title: const Text('Server'),
-                        subtitle: Text(_server.text),
+                        subtitle: Text(
+                          _server.text.isEmpty
+                              ? 'Adresse deines Servers'
+                              : _server.text,
+                        ),
                         children: [
                           TextFormField(
                             controller: _server,

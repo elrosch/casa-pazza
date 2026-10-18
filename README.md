@@ -1,271 +1,44 @@
 # Casa Pazza
 
-A family and household organizer: shared to-do lists with one-off and
-recurring tasks, shared shopping lists, an interactive Android home screen
-widget and push notifications when someone assigns you a task.
-
-The Flutter app works offline first and syncs with a small self-hosted
-[PocketBase](https://pocketbase.io) server, for example on a NAS at home.
-
-- [Features](#features)
-- [Architecture](#architecture)
-- [Repository layout](#repository-layout)
-- [App development](#app-development)
-- [Server development](#server-development)
-- [Deployment on a NAS with Portainer](#deployment-on-a-nas-with-portainer)
-- [Push notifications (Firebase Cloud Messaging)](#push-notifications-firebase-cloud-messaging)
-- [CI/CD](#cicd)
-- [How sync works](#how-sync-works)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
+A family and household organizer for Android: shared to-do lists, recurring
+chores and shopping lists, synced through a server you host yourself.
 
 ## Features
 
-**Households and accounts**
-- Every family member has their own account (e-mail and password).
-- One person creates a household; the others join it with an 8-character
-  invite code from the settings screen. The code can be regenerated.
-- Each user belongs to exactly one household; all data is scoped to it.
+- **Households:** everyone has their own account; family members join a
+  household with an invite code.
+- **Tasks:** one-off and recurring tasks (every N days, weeks, months or
+  years), with due dates and an assignee. A recurring task is due again N
+  units after the day it was completed.
+- **Shopping lists:** quick add with quantity detection (`2 l Milch`),
+  check off, swipe to delete.
+- **Home screen widget:** see open tasks, check them off, edit them or add a
+  new one with assignment, without opening the app.
+- **Push notifications:** the assignee is notified when someone assigns them
+  a task (optional, via Firebase Cloud Messaging).
+- **Offline first:** everything works without a connection; changes sync
+  automatically once the server is reachable again.
 
-**Tasks**
-- The tasks tab opens the current list directly. Add tasks by typing in the
-  field at the top; tap a task to edit details.
-- Tasks can be assigned to a household member and have an optional due date.
-  Overdue tasks are highlighted.
-- Recurring tasks (every N days, weeks, months or years). When a recurring
-  task is completed, it stays open and is due again N units **after the day
-  of completion**, whether it was done early, on time or late.
-- Additional lists can be created from the overflow menu (⋮). Once there is
-  more than one list, tapping the title switches between them.
+## How it works
 
-**Shopping lists**
-- Quick add with quantity detection, e.g. `2 l Milch`, `500g Hackfleisch`
-  or `Eier 10`.
-- Tap to check off, swipe to delete, "remove checked" from the menu.
-- Multiple lists work like task lists.
+The Flutter app keeps all data in a local database and syncs it with a
+[PocketBase](https://pocketbase.io) server. The server is a single container
+that stores everything in SQLite, so a small home server or NAS is enough.
+Only push notifications go through Google; all other data stays on your
+server.
 
-**Home screen widget (Android)**
-- Shows the open tasks of the current list with due date, assignee and a
-  recurrence marker.
-- The checkbox completes a task in the background without opening the app.
-- Tapping a task opens its editor; `+` opens the editor for a new task,
-  including assignment.
+## Self-hosting
 
-**Push notifications**
-- The assignee gets a notification when someone else assigns a task to
-  them. Tapping it opens the task.
-- A push also syncs the app in the background, so the widget shows the new
-  task right away.
+### 1. Run the server
 
-**Offline first**
-- Everything works without a connection to the server; changes are synced
-  automatically once it is reachable again (e.g. back in the home Wi-Fi).
-
-## Architecture
-
-```
-┌──────────────────────────────┐          ┌──────────────────────────────┐
-│ Flutter app (Android)        │  REST +  │ PocketBase (Go) on the NAS   │
-│                              │  SSE     │                              │
-│ UI ── Riverpod ── drift DB ◄─┼──────────┼─► SQLite, API rules,         │
-│                 (SQLite)     │  sync    │   JS migrations + hooks      │
-│ Home screen widget (Glance) ◄┤          │                              │
-│ Firebase Messaging          ◄┼──┐       │ push.go ──► FCM HTTP v1 API  │
-└──────────────────────────────┘  │       └──────────────┬───────────────┘
-                                  │                      │
-                                  └──── Google FCM ◄─────┘
-```
-
-- **App:** Flutter with [Riverpod](https://riverpod.dev) for state,
-  [drift](https://drift.simonbinder.eu) as the local SQLite database,
-  [go_router](https://pub.dev/packages/go_router) for navigation and the
-  [PocketBase Dart SDK](https://pub.dev/packages/pocketbase) for the API.
-- **Widget:** Jetpack Glance (Kotlin), connected to Flutter via
-  [home_widget](https://pub.dev/packages/home_widget). The app writes the
-  widget data as JSON; checkbox taps run a Dart callback in a background
-  isolate.
-- **Server:** PocketBase built as a Go program, so it can sign the OAuth
-  tokens needed for Firebase Cloud Messaging. The schema lives in JS
-  migrations, business rules in JS hooks and API rules.
-- **Push:** Firebase Cloud Messaging. Only the notification passes through
-  Google; all other data stays on the server at home.
-
-## Repository layout
-
-```
-lib/
-  main.dart                    Entry point: preferences, widget callbacks, Firebase
-  src/
-    app.dart                   MaterialApp, lifecycle sync, widget/push launches
-    routing/app_router.dart    Routes and login/household redirects
-    theme/                     Light and dark theme
-    common/                    Shared widgets (list switcher, dialogs, quick add)
-    data/
-      auth.dart                Login, registration, household create/join/leave
-      db/database.dart         drift tables (generated: database.g.dart)
-      sync/sync_service.dart   Push/pull/realtime sync engine
-      repositories.dart        Local-first reads and writes for the UI
-      recurrence.dart          Recurrence rules and next due date
-      ids.dart                 Client-side PocketBase record ids
-    features/
-      auth/                    Login and registration screen
-      household/               Create or join a household
-      tasks/                   Task list, task tile, task editor
-      shopping/                Shopping list
-      settings/                Invite code, members, sync status, logout
-      widget/                  Home screen widget data, actions, background sync
-      push/                    Firebase Messaging registration and handling
-android/
-  app/src/main/kotlin/…/TasksWidget.kt   Glance home screen widget
-  app/src/main/kotlin/…/MainActivity.kt  Notification channel
-  app/google-services.json               Firebase app config (optional)
-server/
-  main.go                      PocketBase with JS plugins and push
-  push.go                      FCM notifications on task assignment
-  push_test.go                 Unit tests for the push logic
-  pb_migrations/               Schema (collections, API rules, indexes)
-  pb_hooks/                    Invite codes, join endpoint, guards
-  Dockerfile, entrypoint.sh    Container image
-  docker-compose.yml           Stack for Portainer
-test/                          Flutter unit, widget and sync integration tests
-.github/workflows/             CI, server image and release workflows
-```
-
-## App development
-
-### Prerequisites
-
-- Flutter (stable, see `FLUTTER_VERSION` in `.github/workflows/ci.yml`)
-- Android SDK and an Android phone with USB debugging, or an emulator
-- Optional: Docker, to run the server locally
-
-### Run
-
-```bash
-flutter pub get
-flutter run
-```
-
-On first start, the login screen asks for the server address (default
-`http://casa-pazza.local:8090`). If Android cannot resolve `.local` names in
-your network, use the IP address instead, e.g. `http://192.168.1.10:8090`.
-Plain HTTP is allowed because the server runs in the home network.
-
-### Code generation
-
-The drift database code (`database.g.dart`) is generated. After changing
-tables in `lib/src/data/db/database.dart`, run:
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
-
-Bump `schemaVersion` and add a migration when changing tables of an
-existing release.
-
-### Tests
-
-```bash
-dart format --set-exit-if-changed lib test
-flutter analyze
-flutter test
-```
-
-`test/sync_integration_test.dart` simulates two phones syncing through a real
-PocketBase. It is skipped unless `PB_TEST_URL` points to a server with this
-repository's schema (see [Server development](#server-development)):
-
-```bash
-PB_TEST_URL=http://127.0.0.1:8090 flutter test
-```
-
-## Server development
-
-The server in `server/` is PocketBase as a Go module (the PocketBase version
-is pinned in `server/go.mod`). It accepts the same flags as the official
-binary.
-
-### Run locally
-
-With Go installed:
-
-```bash
-cd server
-go run . serve --http=127.0.0.1:8090 --dir=/tmp/pb_data \
-  --migrationsDir=pb_migrations --hooksDir=pb_hooks
-```
-
-Or with Docker:
-
-```bash
-docker build -t casa-pazza-pocketbase server
-docker run --rm -p 8090:8090 casa-pazza-pocketbase
-```
-
-The dashboard is at `http://127.0.0.1:8090/_/`. On first start the log
-prints a link to create the superuser. Alternatively set `PB_ADMIN_EMAIL`
-and `PB_ADMIN_PASSWORD` (at least 10 characters) for the container.
-
-### Tests
-
-```bash
-cd server
-gofmt -l .
-go vet ./...
-go test ./...
-```
-
-### Data model
-
-| Collection       | Purpose                                                   |
-|------------------|-----------------------------------------------------------|
-| `users`          | Accounts; `household` links each user to one household     |
-| `households`     | Name and invite code                                       |
-| `task_lists`     | Task lists of a household                                  |
-| `tasks`          | Title, notes, assignee, due date, recurrence, done state   |
-| `shopping_lists` | Shopping lists of a household                              |
-| `shopping_items` | Name, quantity, checked state                              |
-| `devices`        | FCM tokens per user (private to their owner)               |
-| `app_secrets`    | Server-side secrets, superusers only                       |
-
-All shared collections carry a `household` relation, a `deleted` flag (soft
-delete) and `created`/`updated` timestamps. API rules restrict every request
-to the caller's household. Users cannot set their household directly; they
-create one or join via `POST /api/casa/join` with an invite code.
-`POST /api/casa/invite-code` regenerates the code.
-
-### Schema changes
-
-Add a new file to `server/pb_migrations/` (never edit migrations that are
-already deployed). PocketBase applies pending migrations on start, so
-deploying a new image is enough.
-
-## Deployment on a NAS with Portainer
-
-The server image `ghcr.io/elrosch/casa-pazza-pocketbase` (amd64 and arm64)
-is built by GitHub Actions on every push to `main` that touches `server/`.
-
-### 1. Registry access
-
-The repository is private, so the image is private as well. Create a
-**classic** GitHub personal access token with only the `read:packages` scope
-(GitHub → Settings → Developer settings → Personal access tokens → Tokens
-(classic)) and add it in Portainer under *Registries → Add registry*:
-
-- Registry URL: `ghcr.io`
-- Username: your GitHub user
-- Password: the token
-
-### 2. Create the stack
-
-In Portainer go to *Stacks → Add stack* and choose **Web editor**. Paste
-the content of [`server/docker-compose.yml`](server/docker-compose.yml);
-no environment variables are needed:
+The server image is built from [`server/`](server) by GitHub Actions and
+published to the GitHub Container Registry of the repository. Run it with
+Docker Compose (or paste the file into a Portainer stack):
 
 ```yaml
 services:
   pocketbase:
-    image: ghcr.io/elrosch/casa-pazza-pocketbase:latest
+    image: ghcr.io/<owner>/casa-pazza-pocketbase:latest
     container_name: casa-pazza-pocketbase
     restart: unless-stopped
     ports:
@@ -277,146 +50,65 @@ volumes:
   pb_data:
 ```
 
-A *Repository* stack works too, but then Portainer also needs read access to
-the private repository (a fine-grained token with *Contents: read-only*).
+Replace `<owner>` with the GitHub account that hosts the repository (your
+fork if you build the image yourself), or build it locally with
+`docker build -t casa-pazza-pocketbase server`. If the image is private,
+log in to `ghcr.io` with a token that has the `read:packages` scope.
 
-### 3. Create the superuser
+On first start the container log prints a link to create the admin account
+(replace `0.0.0.0` with your server's address). The admin dashboard is then
+available at `http://<server>:8090/_/`. All data lives in the `pb_data`
+volume; backups can be configured in the dashboard.
 
-Open the container logs in Portainer. On first start PocketBase prints an
-installer link like `http://0.0.0.0:8090/_/#/pbinstall/…`. Replace
-`0.0.0.0` with the address of the NAS and open it to create the superuser.
-Afterwards the dashboard is available at `http://<nas>:8090/_/`.
+To update, pull the new image and recreate the container. Database
+migrations run automatically on start.
 
-### 4. Updating
+### 2. Install the app
 
-After a new image has been built, open the stack in Portainer, click
-**Update the stack** and enable **Re-pull image**. Migrations run
-automatically on start; the data in the `pb_data` volume is kept.
+Download the APK from the [releases](../../releases) and install it on each
+phone. On first start, enter your server address (e.g.
+`http://192.168.1.10:8090`), create an account and either create a household
+or join one with the invite code shown in another member's settings.
 
-### Backups
+The app allows plain HTTP for use inside a home network. To use it on the
+go, make the server reachable through a VPN or a reverse proxy with HTTPS.
 
-All data lives in the `pb_data` volume. PocketBase can also create and
-schedule backups in the dashboard under *Settings → Backups*.
-
-## Push notifications (Firebase Cloud Messaging)
-
-Push is optional: without the configuration below the app works normally,
-just without notifications. FCM is free of charge.
-
-### Firebase project
+### 3. Push notifications (optional)
 
 1. Create a project in the [Firebase console](https://console.firebase.google.com)
-   (Google Analytics is not needed).
-2. Add an Android app with the package name `de.eliasrosch.casa_pazza` and
-   download `google-services.json` to `android/app/google-services.json`.
-   The Google Services Gradle plugin is only applied when this file exists.
-3. Under *Project settings → Service accounts* generate a new private key.
-   **Keep this JSON file secret and never commit it.**
+   and add an Android app with the package name `de.eliasrosch.casa_pazza`.
+2. Build the app with the downloaded `google-services.json` in
+   `android/app/` (for releases, store its content in the repository secret
+   `GOOGLE_SERVICES_JSON`).
+3. In Firebase under *Project settings → Service accounts*, generate a
+   private key. In the PocketBase dashboard open the `app_secrets`
+   collection and paste the key's JSON into the `value` of
+   `fcm_service_account`. Keep this key secret.
 
-### Server configuration
+## Building releases
 
-In the PocketBase dashboard open *Collections → app_secrets*, edit the record
-with key `fcm_service_account` and paste the complete content of the service
-account JSON into `value`. The server reads it on the next notification; no
-restart is needed.
+Publishing a GitHub Release with a tag like `v1.2.0` builds an APK with that
+version and attaches it to the release. For APKs that can be updated in
+place, sign them with your own key via these repository secrets:
+`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`
+and `ANDROID_KEY_PASSWORD`.
 
-### What gets sent
+## Development
 
-- A notification is sent when a task is created or changed so that it is
-  assigned to a different user than before, and that user is not the one
-  making the change. Completed or deleted tasks do not notify.
-- Text: "Neue Aufgabe für dich", body `<name of the assigner>: <task title>`.
-  The task title passes through Google's servers; nothing else does.
-- Tokens that FCM reports as unregistered are deleted. Logging out removes
-  the phone's token.
+```bash
+flutter pub get
+flutter run
+flutter test
+```
 
-On Android the notifications use the channel "Aufgaben", which can be
-configured in the system settings of the app.
+The server is PocketBase as a Go module with the schema in
+`server/pb_migrations` and hooks in `server/pb_hooks`:
 
-## CI/CD
-
-| Workflow           | Trigger                         | What it does                                                                                     |
-|--------------------|---------------------------------|--------------------------------------------------------------------------------------------------|
-| `ci.yml`           | Push to `main`, pull requests   | Format check, `flutter analyze`, Go vet/tests, Flutter tests incl. sync test against the Go server, Android debug APK, unsigned iOS build |
-| `server-image.yml` | Changes in `server/`, `v*` tags | Builds the multi-arch server image and pushes it to GHCR (`latest`, `sha-…`, version tags)        |
-| `release.yml`      | Published GitHub Release        | Builds an APK versioned after the release tag and attaches it to the release                     |
-
-### Releases
-
-1. On GitHub open *Releases → Draft a new release*.
-2. Create a new tag like `v1.2.0` (format `vMAJOR.MINOR.PATCH`, optionally
-   with a suffix such as `v1.3.0-beta.1`), write release notes and click
-   **Publish release**.
-3. The `release.yml` workflow builds `casa-pazza-v1.2.0.apk` and attaches it
-   to the release a few minutes later.
-
-The version comes from the tag: `versionName` is `1.2.0` and `versionCode`
-is `MAJOR * 1000000 + MINOR * 1000 + PATCH` (here `1002000`), so every
-higher version installs as an update over the previous one. Minor and patch
-must stay below 1000. A suffix only changes the name, so `v1.3.0-beta.1`
-and `v1.3.0` share the same code; install the final version over the beta
-by uninstalling first, or bump the patch version instead.
-
-Tags pushed without a release do not build an APK. The workflow file is
-taken from the tagged commit, so it applies to tags created after this
-workflow was added.
-
-**Set up signing before the first release you hand out.** Without signing
-secrets every CI run signs with a freshly generated debug key, so Android
-refuses to install the next release over the previous one (signature
-mismatch). Add these repository secrets (*Settings → Secrets and variables →
-Actions*) and keep the keystore safe; all future releases must be signed
-with the same key:
-
-| Secret                       | Content                                  |
-|------------------------------|------------------------------------------|
-| `ANDROID_KEYSTORE_BASE64`    | The upload keystore, base64 encoded      |
-| `ANDROID_KEYSTORE_PASSWORD`  | Keystore password                        |
-| `ANDROID_KEY_ALIAS`          | Key alias                                |
-| `ANDROID_KEY_PASSWORD`       | Key password                             |
-
-Create a keystore once, e.g. with
-`keytool -genkeypair -keystore casa-pazza-release.keystore -alias casa-pazza -keyalg RSA -keysize 4096 -validity 10000`,
-and store its base64 form (`base64 -w0 casa-pazza-release.keystore`) as
-`ANDROID_KEYSTORE_BASE64`.
-
-Locally, the same signing config is read from `android/key.properties`
-(ignored by git).
-
-## How sync works
-
-- Every change is written to the local drift database first and marked
-  `dirty`. Records get their PocketBase id on the phone, so they can be
-  created offline.
-- The sync engine pushes dirty rows (update, or create if the record does
-  not exist yet), then pulls everything with an `updated` timestamp newer
-  than the last pull per collection, then subscribes to realtime events.
-- Sync runs on start, when the app returns to the foreground, when the
-  network changes, every five minutes, shortly after local edits, after
-  widget actions and when a push arrives.
-- Conflicts resolve as last write wins. Pending local changes are never
-  overwritten by pulled data.
-- Deletions are soft deletes (`deleted = true`), so other devices learn
-  about them during the pull.
-- Each household gets a default task list and shopping list whose id equals
-  the household id, so two phones creating them at the same time end up
-  with the same record.
-
-## Troubleshooting
-
-- **"Server nicht erreichbar"**: check the address in the login screen
-  (with `http://` and port). Try the NAS IP instead of `casa-pazza.local`.
-  From another device, `http://<nas>:8090/api/health` should return
-  `API is healthy`.
-- **Widget shows old data**: the widget is updated by the app, by widget
-  actions and by push messages. Opening the app always refreshes it.
-- **No notifications**: check that the app may post notifications, that
-  `fcm_service_account` is filled in `app_secrets`, and look for
-  "push notification failed" in the dashboard under *Logs*. Assigning a
-  task to yourself never notifies.
-- **Portainer cannot pull the image**: the GHCR registry with a
-  `read:packages` token must be configured (see
-  [Registry access](#1-registry-access)).
+```bash
+cd server
+go test ./...
+go run . serve --migrationsDir=pb_migrations --hooksDir=pb_hooks
+```
 
 ## License
 

@@ -8,7 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../features/push/push_service.dart' show unregisterPushDevice;
 import 'db/database.dart';
 
-const defaultServerUrl = 'http://casa-pazza.local:8090';
+/// No default: every household runs its own server, entered at first login.
+const defaultServerUrl = '';
 
 const _serverUrlKey = 'server_url';
 const _authKey = 'pb_auth';

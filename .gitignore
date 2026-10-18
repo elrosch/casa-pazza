@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase app config: provided locally or via the GOOGLE_SERVICES_JSON secret in CI
+/android/app/google-services.json
