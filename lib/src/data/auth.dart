@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../features/push/push_service.dart' show unregisterPushDevice;
 import 'db/database.dart';
 
 const defaultServerUrl = 'http://casa-pazza.local:8090';
@@ -137,6 +138,7 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> logout() async {
+    await unregisterPushDevice(state.pb);
     state.pb.authStore.clear();
     await ref.read(databaseProvider).clearAll();
     state = AuthState(serverUrl: state.serverUrl, pb: state.pb);

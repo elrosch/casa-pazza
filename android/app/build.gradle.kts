@@ -63,6 +63,12 @@ android {
     }
 }
 
+// Push notifications need the Firebase config; builds without it simply have
+// push disabled (see initPush in push_service.dart).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 flutter {
     source = "../.."
 }

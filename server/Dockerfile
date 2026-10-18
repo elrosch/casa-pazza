@@ -1,16 +1,18 @@
-FROM alpine:3.22
-
-ARG PB_VERSION=0.40.5
+# PocketBase (version pinned in go.mod) extended with push notifications.
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS build
+ARG TARGETOS
 ARG TARGETARCH
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY *.go ./
+# Cross-compiles for the target platform, so arm64 images need no emulation.
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -trimpath -ldflags="-s -w" -o /out/pocketbase .
 
-RUN apk add --no-cache ca-certificates unzip wget \
-    && cd /tmp \
-    && ZIP="pocketbase_${PB_VERSION}_linux_${TARGETARCH}.zip" \
-    && URL="https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}" \
-    && wget -q "$URL/$ZIP" "$URL/checksums.txt" \
-    && grep " $ZIP\$" checksums.txt | sha256sum -c - \
-    && unzip "$ZIP" pocketbase -d /usr/local/bin/ \
-    && rm "$ZIP" checksums.txt
+FROM alpine:3.22
+RUN apk add --no-cache ca-certificates tzdata
+COPY --from=build /out/pocketbase /usr/local/bin/pocketbase
 
 # Schema migrations and server-side hooks are versioned in this repo.
 COPY pb_migrations /pb_migrations

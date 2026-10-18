@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'src/app.dart';
 import 'src/data/auth.dart';
+import 'src/features/push/push_service.dart';
 import 'src/features/widget/home_widget_sync.dart';
 
 Future<void> main() async {
@@ -14,10 +15,14 @@ Future<void> main() async {
   await initializeDateFormatting('de');
   final prefs = await SharedPreferences.getInstance();
   unawaited(registerWidgetCallbacks());
+  final pushAvailable = await initPush();
 
   runApp(
     ProviderScope(
-      overrides: [prefsProvider.overrideWithValue(prefs)],
+      overrides: [
+        prefsProvider.overrideWithValue(prefs),
+        pushAvailableProvider.overrideWithValue(pushAvailable),
+      ],
       child: const CasaPazzaApp(),
     ),
   );

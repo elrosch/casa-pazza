@@ -41,6 +41,13 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/tasks_widget_info" />
         </receiver>
+        <!-- Push notifications (FCM) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="assignments" />
         <!-- Widget launch URIs (casapazza://…) are handled by home_widget, not as routes. -->
         <meta-data
             android:name="flutter_deeplinking_enabled"

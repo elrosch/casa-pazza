@@ -161,6 +161,26 @@ Future<void> widgetBackgroundCallback(Uri? uri) async {
   final taskId = uri?.queryParameters['id'];
   if (uri?.host != 'complete' || taskId == null) return;
 
+  await syncInBackground(
+    before: (container) async {
+      final db = container.read(databaseProvider);
+      final task = await (db.select(
+        db.tasks,
+      )..where((t) => t.id.equals(taskId))).getSingleOrNull();
+      if (task != null && !task.done && !task.deleted) {
+        await container.read(tasksRepositoryProvider).complete(task);
+      }
+    },
+  );
+}
+
+/// Syncs with the server outside the app UI (widget actions, push messages)
+/// and refreshes the home screen widget. [before] runs first, e.g. to apply
+/// a local change, and the widget is updated once before and once after
+/// the network round trip.
+Future<void> syncInBackground({
+  Future<void> Function(ProviderContainer container)? before,
+}) async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   // The app isolate may have changed login or selected list meanwhile.
@@ -172,15 +192,10 @@ Future<void> widgetBackgroundCallback(Uri? uri) async {
     ],
   );
   try {
-    final db = container.read(databaseProvider);
-    final task = await (db.select(
-      db.tasks,
-    )..where((t) => t.id.equals(taskId))).getSingleOrNull();
-    if (task != null && !task.done && !task.deleted) {
-      await container.read(tasksRepositoryProvider).complete(task);
+    if (before != null) {
+      await before(container);
+      await _publishFrom(container);
     }
-    await _publishFrom(container);
-
     final sync = container.read(syncServiceProvider);
     if (sync != null) {
       await sync.syncNow();

@@ -2,4 +2,6 @@
 <resources>
     <string name="tasks_widget_label">Aufgaben</string>
     <string name="tasks_widget_description">Offene Aufgaben im Überblick und schnell neue hinzufügen</string>
+    <string name="channel_assignments">Aufgaben</string>
+    <string name="channel_assignments_description">Benachrichtigungen, wenn dir eine Aufgabe zugewiesen wird</string>
 </resources>
