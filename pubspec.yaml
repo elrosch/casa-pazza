@@ -116,3 +116,8 @@ flutter_launcher_icons:
   adaptive_icon_monochrome: "assets/icon/foreground.png"
   # foreground.png is already laid out on the 108dp canvas.
   adaptive_icon_foreground_inset: 0
+  web:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    background_color: "#E2583E"
+    theme_color: "#E2583E"

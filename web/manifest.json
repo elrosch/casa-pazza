@@ -3,7 +3,7 @@
     "short_name": "Casa Pazza",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#FFFFFF",
+    "background_color": "#E2583E",
     "theme_color": "#E2583E",
     "description": "Aufgaben und Einkaufslisten für den Haushalt",
     "lang": "de",
