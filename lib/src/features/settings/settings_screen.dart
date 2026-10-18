@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../common/widgets.dart';
 import '../../data/auth.dart';
@@ -97,6 +98,7 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('Abmelden'),
             onTap: () => ref.read(authProvider.notifier).logout(),
           ),
+          const AboutSection(),
         ],
       ),
     );
@@ -144,6 +146,60 @@ class SettingsScreen extends ConsumerWidget {
         ).showSnackBar(SnackBar(content: Text(describeError(e))));
       }
     }
+  }
+}
+
+final packageInfoProvider = FutureProvider<PackageInfo>(
+  (ref) => PackageInfo.fromPlatform(),
+);
+
+const sourceCodeUrl = 'https://github.com/elrosch/casa-pazza';
+
+/// App name, version, licenses and source code link.
+class AboutSection extends ConsumerWidget {
+  const AboutSection({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final info = ref.watch(packageInfoProvider).value;
+    final version = info == null
+        ? '…'
+        : '${info.version} (Build ${info.buildNumber})';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _Section('Über'),
+        ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: const Text('Casa Pazza'),
+          subtitle: Text('Version $version'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.code),
+          title: const Text('Quellcode'),
+          subtitle: const Text('$sourceCodeUrl – zum Kopieren tippen'),
+          onTap: () {
+            Clipboard.setData(const ClipboardData(text: sourceCodeUrl));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Link kopiert')));
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.description_outlined),
+          title: const Text('Lizenzen'),
+          onTap: () => showLicensePage(
+            context: context,
+            applicationName: 'Casa Pazza',
+            applicationVersion: version,
+            applicationLegalese:
+                'Freie Software unter der GNU General Public License '
+                'Version 3 (GPL-3.0).\n$sourceCodeUrl',
+          ),
+        ),
+      ],
+    );
   }
 }
 
