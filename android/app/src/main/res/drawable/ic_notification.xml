@@ -1,10 +1,16 @@
-<!-- Monochrome status bar icon: house with check mark. -->
+<!-- Monochrome status bar icon: the launcher glyph from assets/icon/foreground.svg
+     (house with a face), cropped from the 108-unit canvas. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M12,3L2,12h3v8h14v-8h3L12,3zM10.5,17.2l-3.2,-3.2 1.4,-1.4 1.8,1.8 4.6,-4.6 1.4,1.4 -6,6z" />
+    android:viewportWidth="58"
+    android:viewportHeight="58">
+    <group
+        android:translateX="-25"
+        android:translateY="-24">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M54,28.8 L27,52.2 L34.2,52.2 L34.2,77.4 L73.8,77.4 L73.8,52.2 L81,52.2Z M40.5,57.6 A4.5,4.5 0 1 0 49.5,57.6 A4.5,4.5 0 1 0 40.5,57.6Z M58.92,51.19 L67.61,53.52 L65.28,62.21 L56.59,59.88Z M42.78,69.04 L50.19,75.39 L64.94,66.54 A2.02,2.02 0 0 0 62.86,63.06 L50.61,70.41 L45.42,65.96 A2.02,2.02 0 0 0 42.78,69.04Z" />
+    </group>
 </vector>
