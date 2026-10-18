@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -14,8 +15,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('de');
   final prefs = await SharedPreferences.getInstance();
-  unawaited(registerWidgetCallbacks());
-  final pushAvailable = await initPush();
+  // Home screen widget and push notifications exist only on Android.
+  if (!kIsWeb) unawaited(registerWidgetCallbacks());
+  final pushAvailable = !kIsWeb && await initPush();
 
   runApp(
     ProviderScope(

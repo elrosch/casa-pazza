@@ -81,6 +81,7 @@ final pushRegistrationProvider = Provider<void>((ref) {
 
 /// Removes this phone's token on logout, so pushes for the old account stop.
 Future<void> unregisterPushDevice(PocketBase pb) async {
+  if (kIsWeb) return;
   try {
     // ignore: deprecated_member_use
     final token = await FirebaseMessaging.instance.getToken();

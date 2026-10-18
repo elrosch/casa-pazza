@@ -8,8 +8,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../features/push/push_service.dart' show unregisterPushDevice;
 import 'db/database.dart';
 
-/// No default: every household runs its own server, entered at first login.
+/// No default on mobile: every household runs its own server, entered at
+/// first login.
 const defaultServerUrl = '';
+
+/// The web app is served by the PocketBase server itself, so it always talks
+/// to the page's origin. `--dart-define=SERVER_URL=…` overrides this for
+/// `flutter run -d chrome` against a separate server.
+String get webServerUrl => const String.fromEnvironment('SERVER_URL').isEmpty
+    ? Uri.base.origin
+    : const String.fromEnvironment('SERVER_URL');
 
 const _serverUrlKey = 'server_url';
 const _authKey = 'pb_auth';
@@ -48,7 +56,9 @@ class AuthController extends Notifier<AuthState> {
 
   @override
   AuthState build() {
-    final url = _prefs.getString(_serverUrlKey) ?? defaultServerUrl;
+    final url = kIsWeb
+        ? webServerUrl
+        : _prefs.getString(_serverUrlKey) ?? defaultServerUrl;
     final pb = _createClient(url);
     if (pb.authStore.isValid) {
       // Refresh in the background: renews the token and picks up household
@@ -73,7 +83,7 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> _useServer(String url) async {
     final normalized = url.trim().replaceAll(RegExp(r'/+$'), '');
-    if (normalized == state.serverUrl) return;
+    if (kIsWeb || normalized == state.serverUrl) return;
     await _prefs.setString(_serverUrlKey, normalized);
     state = AuthState(serverUrl: normalized, pb: _createClient(normalized));
   }

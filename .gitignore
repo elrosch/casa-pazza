@@ -46,3 +46,7 @@ app.*.map.json
 
 # Firebase app config: provided locally or via the GOOGLE_SERVICES_JSON secret in CI
 /android/app/google-services.json
+
+# Downloaded by tool/fetch_web_sqlite.sh
+/web/sqlite3.wasm
+/web/drift_worker.js

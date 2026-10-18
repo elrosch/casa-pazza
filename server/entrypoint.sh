@@ -9,4 +9,4 @@ if [ -n "$PB_ADMIN_EMAIL" ] && [ -n "$PB_ADMIN_PASSWORD" ]; then
 fi
 
 # shellcheck disable=SC2086
-exec $PB serve --http=0.0.0.0:8090 "$@"
+exec $PB serve --http=0.0.0.0:8090 --publicDir=/pb_public "$@"

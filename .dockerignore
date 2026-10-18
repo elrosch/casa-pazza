@@ -1,0 +1,11 @@
+# Only what server/Dockerfile copies is needed in the build context.
+*
+!pubspec.yaml
+!pubspec.lock
+!lib/
+!web/
+!tool/
+!server/
+web/sqlite3.wasm
+web/drift_worker.js
+server/pb_data/

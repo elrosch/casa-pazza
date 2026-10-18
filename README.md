@@ -16,6 +16,7 @@ chores and shopping lists, synced through a server you host yourself.
   new one with assignment, without opening the app.
 - **Push notifications:** the assignee is notified when someone assigns them
   a task (optional, via Firebase Cloud Messaging).
+- **Web app:** the same lists in the browser, served by your server.
 - **Offline first:** everything works without a connection; changes sync
   automatically once the server is reachable again.
 
@@ -52,7 +53,8 @@ volumes:
 
 Replace `<owner>` with the GitHub account that hosts the repository (your
 fork if you build the image yourself), or build it locally with
-`docker build -t casa-pazza-pocketbase server`. If the image is private,
+`docker build -f server/Dockerfile -t casa-pazza-pocketbase .` from the
+repository root. If the image is private,
 log in to `ghcr.io` with a token that has the `read:packages` scope.
 
 On first start the container log prints a link to create the admin account
@@ -62,6 +64,11 @@ volume; backups can be configured in the dashboard.
 
 To update, pull the new image and recreate the container. Database
 migrations run automatically on start.
+
+The image also contains the web app: open `http://<server>:8090/` in a
+browser and log in with your account. It talks to the server it is served
+from, so there is no server address to enter. Home screen widget and push
+notifications are only available in the Android app.
 
 ### 2. Install the app
 
@@ -99,6 +106,14 @@ and `ANDROID_KEY_PASSWORD`.
 flutter pub get
 flutter run
 flutter test
+```
+
+For the web app, fetch the SQLite WebAssembly files once and point it at a
+running server:
+
+```bash
+tool/fetch_web_sqlite.sh
+flutter run -d chrome --dart-define=SERVER_URL=http://127.0.0.1:8090
 ```
 
 The server is PocketBase as a Go module with the schema in

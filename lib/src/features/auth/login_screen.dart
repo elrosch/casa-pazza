@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -137,32 +138,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             : null,
                         onFieldSubmitted: (_) => _submit(),
                       ),
-                      ExpansionTile(
-                        tilePadding: EdgeInsets.zero,
-                        initiallyExpanded: _server.text.isEmpty,
-                        title: const Text('Server'),
-                        subtitle: Text(
-                          _server.text.isEmpty
-                              ? 'Adresse deines Servers'
-                              : _server.text,
-                        ),
-                        children: [
-                          TextFormField(
-                            controller: _server,
-                            keyboardType: TextInputType.url,
-                            decoration: const InputDecoration(
-                              labelText: 'Server-Adresse',
-                              helperText: 'z. B. http://192.168.1.10:8090',
-                            ),
-                            onChanged: (_) => setState(() {}),
-                            validator: (v) =>
-                                Uri.tryParse(v ?? '')?.hasScheme == true
-                                ? null
-                                : 'Adresse mit http:// angeben',
+                      // On the web the server is the page's own origin.
+                      if (!kIsWeb)
+                        ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          initiallyExpanded: _server.text.isEmpty,
+                          title: const Text('Server'),
+                          subtitle: Text(
+                            _server.text.isEmpty
+                                ? 'Adresse deines Servers'
+                                : _server.text,
                           ),
-                          const SizedBox(height: 12),
-                        ],
-                      ),
+                          children: [
+                            TextFormField(
+                              controller: _server,
+                              keyboardType: TextInputType.url,
+                              decoration: const InputDecoration(
+                                labelText: 'Server-Adresse',
+                                helperText: 'z. B. http://192.168.1.10:8090',
+                              ),
+                              onChanged: (_) => setState(() {}),
+                              validator: (v) =>
+                                  Uri.tryParse(v ?? '')?.hasScheme == true
+                                  ? null
+                                  : 'Adresse mit http:// angeben',
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
                       if (_error != null) ...[
                         const SizedBox(height: 8),
                         Text(

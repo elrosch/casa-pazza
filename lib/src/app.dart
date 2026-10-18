@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -28,11 +29,13 @@ class _CasaPazzaAppState extends ConsumerState<CasaPazzaApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    initialWidgetLaunch().then(_onWidgetLaunch);
-    _widgetClicks = widgetClicks().listen(
-      _onWidgetLaunch,
-      onError: (Object _) {},
-    );
+    if (!kIsWeb) {
+      initialWidgetLaunch().then(_onWidgetLaunch);
+      _widgetClicks = widgetClicks().listen(
+        _onWidgetLaunch,
+        onError: (Object _) {},
+      );
+    }
     if (ref.read(pushAvailableProvider)) {
       _stopPushListening = listenForPushInteractions(
         onOpen: (taskId) => _openRequest(EditTaskRequest(taskId)),
@@ -91,7 +94,7 @@ class _CasaPazzaAppState extends ConsumerState<CasaPazzaApp>
   Widget build(BuildContext context) {
     // Keeps the sync engine and the home screen widget updates alive.
     ref.watch(syncServiceProvider);
-    ref.watch(homeWidgetSyncProvider);
+    if (!kIsWeb) ref.watch(homeWidgetSyncProvider);
     ref.watch(pushRegistrationProvider);
 
     return MaterialApp.router(

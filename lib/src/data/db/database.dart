@@ -104,6 +104,11 @@ class AppDatabase extends _$AppDatabase {
               name: 'casa_pazza',
               // The home screen widget writes from a background isolate.
               native: const DriftNativeOptions(shareAcrossIsolates: true),
+              // Files are fetched into web/ by tool/fetch_web_sqlite.sh.
+              web: DriftWebOptions(
+                sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+                driftWorker: Uri.parse('drift_worker.js'),
+              ),
             ),
       );
 
