@@ -1,0 +1,5 @@
+<!-- Full Casa Pazza icon (legacy launcher icon): glyph on seed color. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="1024" height="1024">
+  <rect width="108" height="108" fill="#E2583E"/>
+  <path fill="#FFFFFF" fill-rule="evenodd" d="M54,28.8 L27,52.2 L34.2,52.2 L34.2,77.4 L73.8,77.4 L73.8,52.2 L81,52.2Z M40.5,57.6 A4.5,4.5 0 1 0 49.5,57.6 A4.5,4.5 0 1 0 40.5,57.6Z M58.92,51.19 L67.61,53.52 L65.28,62.21 L56.59,59.88Z M42.78,69.04 L50.19,75.39 L64.94,66.54 A2.02,2.02 0 0 0 62.86,63.06 L50.61,70.41 L45.42,65.96 A2.02,2.02 0 0 0 42.78,69.04Z"/>
+</svg>
