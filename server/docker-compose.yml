@@ -1,5 +1,5 @@
 # PocketBase sync backend for Casa Pazza.
-# Portainer: Stacks → Add stack → Repository, compose path "server/docker-compose.yml".
+# Portainer: Stacks → Add stack → Web editor (paste this file); see README.
 # First start: open the installer link from the container logs to create the superuser.
 
 services:
