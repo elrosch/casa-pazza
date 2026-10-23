@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,17 +6,21 @@ import '../../common/list_switcher.dart';
 import '../../common/widgets.dart';
 import '../../data/db/database.dart';
 import '../../data/repositories.dart';
+import '../voice/voice_input_sheet.dart';
+import '../widget/home_widget_sync.dart';
+import 'barcode_scanner_screen.dart';
+import 'scanned_product_sheet.dart';
 
 /// Splits quick-add input like "2 l Milch" or "Milch 2l" into name/quantity.
 (String name, String quantity) parseItemInput(String input) {
   final text = input.trim();
   final leading = RegExp(
-    r'^(\d+[.,]?\d*\s*(?:x|stk\.?|g|kg|ml|l|pck\.?|dose[n]?|fl\.?)?)\s+(.+)$',
+    r'^(\d+[.,]?\d*\s*(?:liter|kilo(?:gramm)?|gramm|packung(?:en)?|päckchen|flasche[n]?|stück|becher|gläser|glas|tüte[n]?|x|stk\.?|kg|g|ml|l|pck\.?|dose[n]?|fl\.?)?)\s+(.+)$',
     caseSensitive: false,
   ).firstMatch(text);
   if (leading != null) return (leading.group(2)!, leading.group(1)!);
   final trailing = RegExp(
-    r'^(.+?)\s+(\d+[.,]?\d*\s*(?:x|stk\.?|g|kg|ml|l|pck\.?|dose[n]?|fl\.?)?)$',
+    r'^(.+?)\s+(\d+[.,]?\d*\s*(?:liter|kilo(?:gramm)?|gramm|packung(?:en)?|päckchen|flasche[n]?|stück|becher|gläser|glas|tüte[n]?|x|stk\.?|kg|g|ml|l|pck\.?|dose[n]?|fl\.?)?)$',
     caseSensitive: false,
   ).firstMatch(text);
   if (trailing != null) return (trailing.group(1)!, trailing.group(2)!);
@@ -58,6 +63,16 @@ class _ShoppingListView extends ConsumerWidget {
     final items = ref.watch(shoppingItemsProvider(list.id));
     final repo = ref.read(shoppingRepositoryProvider);
 
+    // The scan button on the home screen widget opens the scanner directly.
+    if (ref.watch(widgetRequestProvider) is ScanRequest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final scan = ref
+            .read(widgetRequestProvider.notifier)
+            .consume<ScanRequest>();
+        if (scan != null && context.mounted) _scan(context);
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: ListSwitcherTitle(
@@ -84,6 +99,25 @@ class _ShoppingListView extends ConsumerWidget {
               final (name, quantity) = parseItemInput(text);
               repo.addItem(list.id, name, quantity: quantity);
             },
+            // Browsers only allow the camera over HTTPS; the home server
+            // usually serves plain HTTP, so scanning is Android only.
+            trailing: kIsWeb
+                ? null
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.mic_none),
+                        tooltip: 'Per Sprache hinzufügen',
+                        onPressed: () => showVoiceInputSheet(context),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.qr_code_scanner),
+                        tooltip: 'Barcode scannen',
+                        onPressed: () => _scan(context),
+                      ),
+                    ],
+                  ),
           ),
           const Divider(height: 1),
           Expanded(
@@ -111,6 +145,12 @@ class _ShoppingListView extends ConsumerWidget {
     );
   }
 
+  Future<void> _scan(BuildContext context) async {
+    final barcode = await scanProductBarcode(context);
+    if (barcode == null || !context.mounted) return;
+    await showScannedProductSheet(context, listId: list.id, barcode: barcode);
+  }
+
   Future<void> _onMenu(
     BuildContext context,
     WidgetRef ref,
@@ -120,6 +160,8 @@ class _ShoppingListView extends ConsumerWidget {
     switch (action) {
       case ListAction.clearChecked:
         await repo.clearChecked(list.id);
+      case ListAction.togglePrivate:
+        break; // Shopping lists are always shared.
       case ListAction.create:
         final name = await showTextInputDialog(
           context,

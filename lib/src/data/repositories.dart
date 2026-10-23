@@ -119,7 +119,7 @@ final _taskOrder = <OrderClauseGenerator<$TasksTable>>[
 class TasksRepository extends _Repository {
   TasksRepository(super.ref);
 
-  Future<String> createList(String name) async {
+  Future<String> createList(String name, {bool isPrivate = false}) async {
     final id = newRecordId();
     await db
         .into(db.taskLists)
@@ -129,12 +129,46 @@ class TasksRepository extends _Repository {
             household: auth.householdId,
             name: name.trim(),
             sort: Value(DateTime.now().millisecondsSinceEpoch ~/ 1000),
+            isPrivate: Value(isPrivate),
+            owner: Value(auth.userId),
             dirty: const Value(true),
           ),
         );
     pushLater();
     return id;
   }
+
+  /// Makes a list private (only the current user sees it) or shares it with
+  /// the household again. Only the list's owner may do this; an ownerless
+  /// list is claimed by the current user.
+  Future<void> setListPrivate(String id, bool isPrivate) async {
+    await db.transaction(() async {
+      await (db.update(db.taskLists)..where((l) => l.id.equals(id))).write(
+        TaskListsCompanion(
+          isPrivate: Value(isPrivate),
+          owner: Value(auth.userId),
+          dirty: const Value(true),
+        ),
+      );
+      if (isPrivate) {
+        // Assignments to others are not allowed in private lists.
+        await (db.update(db.tasks)..where(
+              (t) =>
+                  t.list.equals(id) &
+                  t.assignee.isNotNull() &
+                  t.assignee.equals(auth.userId).not(),
+            ))
+            .write(
+              const TasksCompanion(assignee: Value(null), dirty: Value(true)),
+            );
+      }
+    });
+    pushLater();
+  }
+
+  /// Whether the current user may change the visibility of [list].
+  bool canChangeVisibility(TaskListRow list) =>
+      list.owner == null || list.owner == auth.userId;
 
   Future<void> renameList(String id, String name) async {
     await (db.update(db.taskLists)..where((l) => l.id.equals(id))).write(

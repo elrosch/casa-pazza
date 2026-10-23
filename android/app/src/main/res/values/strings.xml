@@ -2,6 +2,14 @@
 <resources>
     <string name="tasks_widget_label">Aufgaben</string>
     <string name="tasks_widget_description">Offene Aufgaben im Überblick und schnell neue hinzufügen</string>
+    <string name="shopping_widget_label">Einkauf</string>
+    <string name="shopping_widget_description">Einkaufsliste im Überblick, abhaken und per Barcode Artikel hinzufügen</string>
+    <string name="shortcut_voice_short">Per Sprache</string>
+    <string name="shortcut_voice_long">Per Sprache hinzufügen</string>
+    <string name="shortcut_scan_short">Barcode scannen</string>
+    <string name="shortcut_scan_long">Artikel per Barcode hinzufügen</string>
+    <string name="shortcut_task_short">Neue Aufgabe</string>
+    <string name="shortcut_task_long">Neue Aufgabe anlegen</string>
     <string name="channel_assignments">Aufgaben</string>
     <string name="channel_assignments_description">Benachrichtigungen, wenn dir eine Aufgabe zugewiesen wird</string>
 </resources>

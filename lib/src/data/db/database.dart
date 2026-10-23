@@ -43,6 +43,11 @@ class TaskLists extends Table with SyncColumns {
   TextColumn get name => text()();
   TextColumn get color => text().withDefault(const Constant(''))();
   IntColumn get sort => integer().withDefault(const Constant(0))();
+
+  /// Private lists are only visible to [owner] (enforced by the server).
+  BoolColumn get isPrivate =>
+      boolean().named('private').withDefault(const Constant(false))();
+  TextColumn get owner => text().nullable()();
 }
 
 @DataClassName('TaskRow')
@@ -113,7 +118,21 @@ class AppDatabase extends _$AppDatabase {
       );
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.addColumn(taskLists, taskLists.isPrivate);
+        await m.addColumn(taskLists, taskLists.owner);
+        // Pull all lists again to pick up their owners.
+        await (delete(
+          syncCursors,
+        )..where((c) => c.collection.equals('task_lists'))).go();
+      }
+    },
+  );
 
   /// Removes all local data, e.g. on logout or when switching households.
   Future<void> clearAll() => transaction(() async {

@@ -604,6 +604,30 @@ class $TaskListsTable extends TaskLists
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _isPrivateMeta = const VerificationMeta(
+    'isPrivate',
+  );
+  @override
+  late final GeneratedColumn<bool> isPrivate = GeneratedColumn<bool>(
+    'private',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("private" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _ownerMeta = const VerificationMeta('owner');
+  @override
+  late final GeneratedColumn<String> owner = GeneratedColumn<String>(
+    'owner',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -614,6 +638,8 @@ class $TaskListsTable extends TaskLists
     name,
     color,
     sort,
+    isPrivate,
+    owner,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -678,6 +704,18 @@ class $TaskListsTable extends TaskLists
         sort.isAcceptableOrUnknown(data['sort']!, _sortMeta),
       );
     }
+    if (data.containsKey('private')) {
+      context.handle(
+        _isPrivateMeta,
+        isPrivate.isAcceptableOrUnknown(data['private']!, _isPrivateMeta),
+      );
+    }
+    if (data.containsKey('owner')) {
+      context.handle(
+        _ownerMeta,
+        owner.isAcceptableOrUnknown(data['owner']!, _ownerMeta),
+      );
+    }
     return context;
   }
 
@@ -719,6 +757,14 @@ class $TaskListsTable extends TaskLists
         DriftSqlType.int,
         data['${effectivePrefix}sort'],
       )!,
+      isPrivate: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}private'],
+      )!,
+      owner: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner'],
+      ),
     );
   }
 
@@ -737,6 +783,10 @@ class TaskListRow extends DataClass implements Insertable<TaskListRow> {
   final String name;
   final String color;
   final int sort;
+
+  /// Private lists are only visible to [owner] (enforced by the server).
+  final bool isPrivate;
+  final String? owner;
   const TaskListRow({
     required this.id,
     required this.household,
@@ -746,6 +796,8 @@ class TaskListRow extends DataClass implements Insertable<TaskListRow> {
     required this.name,
     required this.color,
     required this.sort,
+    required this.isPrivate,
+    this.owner,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -758,6 +810,10 @@ class TaskListRow extends DataClass implements Insertable<TaskListRow> {
     map['name'] = Variable<String>(name);
     map['color'] = Variable<String>(color);
     map['sort'] = Variable<int>(sort);
+    map['private'] = Variable<bool>(isPrivate);
+    if (!nullToAbsent || owner != null) {
+      map['owner'] = Variable<String>(owner);
+    }
     return map;
   }
 
@@ -771,6 +827,10 @@ class TaskListRow extends DataClass implements Insertable<TaskListRow> {
       name: Value(name),
       color: Value(color),
       sort: Value(sort),
+      isPrivate: Value(isPrivate),
+      owner: owner == null && nullToAbsent
+          ? const Value.absent()
+          : Value(owner),
     );
   }
 
@@ -788,6 +848,8 @@ class TaskListRow extends DataClass implements Insertable<TaskListRow> {
       name: serializer.fromJson<String>(json['name']),
       color: serializer.fromJson<String>(json['color']),
       sort: serializer.fromJson<int>(json['sort']),
+      isPrivate: serializer.fromJson<bool>(json['isPrivate']),
+      owner: serializer.fromJson<String?>(json['owner']),
     );
   }
   @override
@@ -802,6 +864,8 @@ class TaskListRow extends DataClass implements Insertable<TaskListRow> {
       'name': serializer.toJson<String>(name),
       'color': serializer.toJson<String>(color),
       'sort': serializer.toJson<int>(sort),
+      'isPrivate': serializer.toJson<bool>(isPrivate),
+      'owner': serializer.toJson<String?>(owner),
     };
   }
 
@@ -814,6 +878,8 @@ class TaskListRow extends DataClass implements Insertable<TaskListRow> {
     String? name,
     String? color,
     int? sort,
+    bool? isPrivate,
+    Value<String?> owner = const Value.absent(),
   }) => TaskListRow(
     id: id ?? this.id,
     household: household ?? this.household,
@@ -823,6 +889,8 @@ class TaskListRow extends DataClass implements Insertable<TaskListRow> {
     name: name ?? this.name,
     color: color ?? this.color,
     sort: sort ?? this.sort,
+    isPrivate: isPrivate ?? this.isPrivate,
+    owner: owner.present ? owner.value : this.owner,
   );
   TaskListRow copyWithCompanion(TaskListsCompanion data) {
     return TaskListRow(
@@ -834,6 +902,8 @@ class TaskListRow extends DataClass implements Insertable<TaskListRow> {
       name: data.name.present ? data.name.value : this.name,
       color: data.color.present ? data.color.value : this.color,
       sort: data.sort.present ? data.sort.value : this.sort,
+      isPrivate: data.isPrivate.present ? data.isPrivate.value : this.isPrivate,
+      owner: data.owner.present ? data.owner.value : this.owner,
     );
   }
 
@@ -847,14 +917,26 @@ class TaskListRow extends DataClass implements Insertable<TaskListRow> {
           ..write('dirty: $dirty, ')
           ..write('name: $name, ')
           ..write('color: $color, ')
-          ..write('sort: $sort')
+          ..write('sort: $sort, ')
+          ..write('isPrivate: $isPrivate, ')
+          ..write('owner: $owner')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, household, deleted, updated, dirty, name, color, sort);
+  int get hashCode => Object.hash(
+    id,
+    household,
+    deleted,
+    updated,
+    dirty,
+    name,
+    color,
+    sort,
+    isPrivate,
+    owner,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -866,7 +948,9 @@ class TaskListRow extends DataClass implements Insertable<TaskListRow> {
           other.dirty == this.dirty &&
           other.name == this.name &&
           other.color == this.color &&
-          other.sort == this.sort);
+          other.sort == this.sort &&
+          other.isPrivate == this.isPrivate &&
+          other.owner == this.owner);
 }
 
 class TaskListsCompanion extends UpdateCompanion<TaskListRow> {
@@ -878,6 +962,8 @@ class TaskListsCompanion extends UpdateCompanion<TaskListRow> {
   final Value<String> name;
   final Value<String> color;
   final Value<int> sort;
+  final Value<bool> isPrivate;
+  final Value<String?> owner;
   final Value<int> rowid;
   const TaskListsCompanion({
     this.id = const Value.absent(),
@@ -888,6 +974,8 @@ class TaskListsCompanion extends UpdateCompanion<TaskListRow> {
     this.name = const Value.absent(),
     this.color = const Value.absent(),
     this.sort = const Value.absent(),
+    this.isPrivate = const Value.absent(),
+    this.owner = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TaskListsCompanion.insert({
@@ -899,6 +987,8 @@ class TaskListsCompanion extends UpdateCompanion<TaskListRow> {
     required String name,
     this.color = const Value.absent(),
     this.sort = const Value.absent(),
+    this.isPrivate = const Value.absent(),
+    this.owner = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        household = Value(household),
@@ -912,6 +1002,8 @@ class TaskListsCompanion extends UpdateCompanion<TaskListRow> {
     Expression<String>? name,
     Expression<String>? color,
     Expression<int>? sort,
+    Expression<bool>? isPrivate,
+    Expression<String>? owner,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -923,6 +1015,8 @@ class TaskListsCompanion extends UpdateCompanion<TaskListRow> {
       if (name != null) 'name': name,
       if (color != null) 'color': color,
       if (sort != null) 'sort': sort,
+      if (isPrivate != null) 'private': isPrivate,
+      if (owner != null) 'owner': owner,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -936,6 +1030,8 @@ class TaskListsCompanion extends UpdateCompanion<TaskListRow> {
     Value<String>? name,
     Value<String>? color,
     Value<int>? sort,
+    Value<bool>? isPrivate,
+    Value<String?>? owner,
     Value<int>? rowid,
   }) {
     return TaskListsCompanion(
@@ -947,6 +1043,8 @@ class TaskListsCompanion extends UpdateCompanion<TaskListRow> {
       name: name ?? this.name,
       color: color ?? this.color,
       sort: sort ?? this.sort,
+      isPrivate: isPrivate ?? this.isPrivate,
+      owner: owner ?? this.owner,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -978,6 +1076,12 @@ class TaskListsCompanion extends UpdateCompanion<TaskListRow> {
     if (sort.present) {
       map['sort'] = Variable<int>(sort.value);
     }
+    if (isPrivate.present) {
+      map['private'] = Variable<bool>(isPrivate.value);
+    }
+    if (owner.present) {
+      map['owner'] = Variable<String>(owner.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -995,6 +1099,8 @@ class TaskListsCompanion extends UpdateCompanion<TaskListRow> {
           ..write('name: $name, ')
           ..write('color: $color, ')
           ..write('sort: $sort, ')
+          ..write('isPrivate: $isPrivate, ')
+          ..write('owner: $owner, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3555,6 +3661,8 @@ typedef $$TaskListsTableCreateCompanionBuilder =
       required String name,
       Value<String> color,
       Value<int> sort,
+      Value<bool> isPrivate,
+      Value<String?> owner,
       Value<int> rowid,
     });
 typedef $$TaskListsTableUpdateCompanionBuilder =
@@ -3567,6 +3675,8 @@ typedef $$TaskListsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String> color,
       Value<int> sort,
+      Value<bool> isPrivate,
+      Value<String?> owner,
       Value<int> rowid,
     });
 
@@ -3616,6 +3726,16 @@ class $$TaskListsTableFilterComposer
 
   ColumnFilters<int> get sort => $composableBuilder(
     column: $table.sort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPrivate => $composableBuilder(
+    column: $table.isPrivate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get owner => $composableBuilder(
+    column: $table.owner,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3668,6 +3788,16 @@ class $$TaskListsTableOrderingComposer
     column: $table.sort,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isPrivate => $composableBuilder(
+    column: $table.isPrivate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get owner => $composableBuilder(
+    column: $table.owner,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TaskListsTableAnnotationComposer
@@ -3702,6 +3832,12 @@ class $$TaskListsTableAnnotationComposer
 
   GeneratedColumn<int> get sort =>
       $composableBuilder(column: $table.sort, builder: (column) => column);
+
+  GeneratedColumn<bool> get isPrivate =>
+      $composableBuilder(column: $table.isPrivate, builder: (column) => column);
+
+  GeneratedColumn<String> get owner =>
+      $composableBuilder(column: $table.owner, builder: (column) => column);
 }
 
 class $$TaskListsTableTableManager
@@ -3743,6 +3879,8 @@ class $$TaskListsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String> color = const Value.absent(),
                 Value<int> sort = const Value.absent(),
+                Value<bool> isPrivate = const Value.absent(),
+                Value<String?> owner = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TaskListsCompanion(
                 id: id,
@@ -3753,6 +3891,8 @@ class $$TaskListsTableTableManager
                 name: name,
                 color: color,
                 sort: sort,
+                isPrivate: isPrivate,
+                owner: owner,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3765,6 +3905,8 @@ class $$TaskListsTableTableManager
                 required String name,
                 Value<String> color = const Value.absent(),
                 Value<int> sort = const Value.absent(),
+                Value<bool> isPrivate = const Value.absent(),
+                Value<String?> owner = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TaskListsCompanion.insert(
                 id: id,
@@ -3775,6 +3917,8 @@ class $$TaskListsTableTableManager
                 name: name,
                 color: color,
                 sort: sort,
+                isPrivate: isPrivate,
+                owner: owner,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

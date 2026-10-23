@@ -190,6 +190,51 @@ void main() {
       expect(bread.dirty, isFalse);
 
       expect(anna.container.read(syncStatusProvider).phase, SyncPhase.idle);
+
+      // Private list: only Anna sees it and its tasks.
+      Future<List<String>> listNames(Device d) async => [
+        for (final l in await d.db.select(d.db.taskLists).get())
+          if (!l.deleted) l.name,
+      ];
+      final privateId = await anna.tasks.createList('Geheim', isPrivate: true);
+      await anna.tasks.saveTask(listId: privateId, title: 'Geschenk kaufen');
+      await anna.sync();
+      await ben.sync();
+      expect(await listNames(anna), contains('Geheim'));
+      expect(await listNames(ben), isNot(contains('Geheim')));
+      expect(
+        (await ben.db.select(ben.db.tasks).get()).map((t) => t.title),
+        isNot(contains('Geschenk kaufen')),
+      );
+
+      // Shared again: Ben gets the list including its older tasks.
+      await anna.tasks.setListPrivate(privateId, false);
+      await anna.sync();
+      await ben.sync();
+      expect(await listNames(ben), contains('Geheim'));
+      expect(
+        (await ben.db.select(ben.db.tasks).get()).map((t) => t.title),
+        contains('Geschenk kaufen'),
+      );
+
+      // Private again: Ben's local copy disappears on the next sync.
+      await anna.tasks.setListPrivate(privateId, true);
+      await anna.sync();
+      await ben.sync();
+      expect(await listNames(ben), isNot(contains('Geheim')));
+      expect(
+        (await ben.db.select(ben.db.tasks).get()).map((t) => t.title),
+        isNot(contains('Geschenk kaufen')),
+      );
+
+      // Ben cannot make Anna's shared list private.
+      final annaShared = await anna.tasks.createList('Annas Liste');
+      await anna.sync();
+      await ben.sync();
+      final benCopy = await (ben.db.select(
+        ben.db.taskLists,
+      )..where((l) => l.id.equals(annaShared))).getSingle();
+      expect(ben.tasks.canChangeVisibility(benCopy), isFalse);
     },
     skip: serverUrl == null ? 'PB_TEST_URL not set' : false,
     timeout: const Timeout(Duration(minutes: 2)),

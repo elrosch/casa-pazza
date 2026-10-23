@@ -8,11 +8,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/auth.dart';
 import '../../data/repositories.dart';
+import '../../data/task_filter.dart';
 import '../../data/sync/sync_service.dart';
+import '../../routing/app_router.dart' show AppRoutes;
 
-/// Must match DATA_KEY and the receiver class in TasksWidget.kt.
-const _dataKey = 'tasks_widget';
-const _androidReceiver = 'de.eliasrosch.casa_pazza.TasksWidgetReceiver';
+/// Data keys and receivers, matching TasksWidget.kt and ShoppingWidget.kt.
+const _tasksWidget = (
+  key: 'tasks_widget',
+  receiver: 'de.eliasrosch.casa_pazza.TasksWidgetReceiver',
+);
+const _shoppingWidget = (
+  key: 'shopping_widget',
+  receiver: 'de.eliasrosch.casa_pazza.ShoppingWidgetReceiver',
+);
 
 /// Builds the JSON the Android widget renders. Date labels are computed
 /// natively so they stay correct while the app is closed.
@@ -20,8 +28,15 @@ const _androidReceiver = 'de.eliasrosch.casa_pazza.TasksWidgetReceiver';
 String buildWidgetJson({
   required bool loggedIn,
   String listName = '',
+  bool todayOnly = false,
   List<Map<String, Object?>> tasks = const [],
-}) => jsonEncode({'loggedIn': loggedIn, 'list': listName, 'tasks': tasks});
+}) => jsonEncode({
+  'loggedIn': loggedIn,
+  'list': listName,
+  // The widget filters by date itself, so it stays right after midnight.
+  'todayOnly': todayOnly,
+  'tasks': tasks,
+});
 
 /// Widget data for the open tasks of the selected task list, or null while
 /// still loading.
@@ -48,8 +63,9 @@ final widgetJsonProvider = Provider<String?>((ref) {
   return buildWidgetJson(
     loggedIn: true,
     listName: list.name,
+    todayOnly: ref.watch(taskFilterProvider) == TaskFilter.today,
     tasks: [
-      for (final t in tasks.where((t) => !t.done).take(30))
+      for (final t in tasks.where((t) => !t.done).take(60))
         {
           'id': t.id,
           'title': t.title,
@@ -63,18 +79,52 @@ final widgetJsonProvider = Provider<String?>((ref) {
   );
 });
 
+/// Widget data for the unchecked items of the selected shopping list, or
+/// null while still loading.
+final shoppingWidgetJsonProvider = Provider<String?>((ref) {
+  final auth = ref.watch(authProvider);
+  if (!auth.isLoggedIn || !auth.hasHousehold) {
+    return jsonEncode({'loggedIn': false});
+  }
+  final lists = ref.watch(shoppingListsProvider).value;
+  if (lists == null) return null;
+  final list = resolveSelectedList(
+    lists,
+    ref.watch(selectedListIdProvider('shopping')),
+    (l) => l.id,
+  );
+  if (list == null) return null;
+  final items = ref.watch(shoppingItemsProvider(list.id)).value;
+  if (items == null) return null;
+  return jsonEncode({
+    'loggedIn': true,
+    'list': list.name,
+    'items': [
+      for (final i in items.where((i) => !i.checked).take(40))
+        {'id': i.id, 'name': i.name, 'quantity': i.quantity},
+    ],
+  });
+});
+
 /// Pushes widget data whenever it changes. Watched by the app widget.
 final homeWidgetSyncProvider = Provider<void>((ref) {
   ref.listen<String?>(widgetJsonProvider, (previous, json) {
     if (json == null || json == previous) return;
-    unawaited(_publish(json));
+    unawaited(_publish(_tasksWidget, json));
+  }, fireImmediately: true);
+  ref.listen<String?>(shoppingWidgetJsonProvider, (previous, json) {
+    if (json == null || json == previous) return;
+    unawaited(_publish(_shoppingWidget, json));
   }, fireImmediately: true);
 });
 
-Future<void> _publish(String json) async {
+Future<void> _publish(
+  ({String key, String receiver}) widget,
+  String json,
+) async {
   try {
-    await HomeWidget.saveWidgetData<String>(_dataKey, json);
-    await HomeWidget.updateWidget(qualifiedAndroidName: _androidReceiver);
+    await HomeWidget.saveWidgetData<String>(widget.key, json);
+    await HomeWidget.updateWidget(qualifiedAndroidName: widget.receiver);
   } catch (e) {
     // No widget support (tests, iOS without extension): nothing to update.
     debugPrint('home widget update skipped: $e');
@@ -89,14 +139,20 @@ Future<void> _publish(String json) async {
 sealed class WidgetRequest {
   const WidgetRequest();
 
-  /// Parses the launch URIs used in TasksWidget.kt.
+  /// Parses the launch URIs used by the widgets (TasksWidget.kt,
+  /// ShoppingWidget.kt) and the app shortcuts (res/xml/shortcuts.xml).
   static WidgetRequest? fromUri(Uri? uri) => switch (uri?.host) {
     'add-task' => const AddTaskRequest(),
     'edit-task' when uri!.queryParameters['id'] != null => EditTaskRequest(
       uri.queryParameters['id']!,
     ),
+    'scan' => const ScanRequest(),
+    'voice' => const VoiceRequest(),
     _ => null,
   };
+
+  /// The tab that handles this request.
+  String get route => AppRoutes.tasks;
 }
 
 class AddTaskRequest extends WidgetRequest {
@@ -107,6 +163,19 @@ class EditTaskRequest extends WidgetRequest {
   const EditTaskRequest(this.taskId);
 
   final String taskId;
+}
+
+/// The "Per Sprache hinzufügen" app shortcut: open voice input.
+class VoiceRequest extends WidgetRequest {
+  const VoiceRequest();
+}
+
+/// The shopping widget's scan button: open the barcode scanner.
+class ScanRequest extends WidgetRequest {
+  const ScanRequest();
+
+  @override
+  String get route => AppRoutes.shopping;
 }
 
 /// Pending request from a widget launch; the tasks tab consumes it.
@@ -121,9 +190,11 @@ class WidgetRequestNotifier extends Notifier<WidgetRequest?> {
 
   void request(WidgetRequest request) => state = request;
 
-  /// Returns the pending request and clears it.
-  WidgetRequest? consume() {
+  /// Returns the pending request if it is a [T] and clears it, so each tab
+  /// only takes the requests meant for it.
+  T? consume<T extends WidgetRequest>() {
     final request = state;
+    if (request is! T) return null;
     state = null;
     return request;
   }
@@ -153,29 +224,45 @@ Future<void> registerWidgetCallbacks() async {
   }
 }
 
-/// Runs in a background isolate when a checkbox on the widget is tapped
-/// (`casapazza://complete?id=…`): completes the task like the app does,
-/// refreshes the widget right away and then syncs with the server.
+/// Runs in a background isolate when a checkbox on a widget is tapped:
+/// `casapazza://complete?id=…` completes a task like the app does,
+/// `casapazza://check-item?id=…` checks off a shopping item. The widgets are
+/// refreshed right away, then the change is synced with the server.
 @pragma('vm:entry-point')
 Future<void> widgetBackgroundCallback(Uri? uri) async {
-  final taskId = uri?.queryParameters['id'];
-  if (uri?.host != 'complete' || taskId == null) return;
+  final id = uri?.queryParameters['id'];
+  if (id == null) return;
 
-  await syncInBackground(
-    before: (container) async {
-      final db = container.read(databaseProvider);
-      final task = await (db.select(
-        db.tasks,
-      )..where((t) => t.id.equals(taskId))).getSingleOrNull();
-      if (task != null && !task.done && !task.deleted) {
-        await container.read(tasksRepositoryProvider).complete(task);
-      }
-    },
-  );
+  switch (uri!.host) {
+    case 'complete':
+      await syncInBackground(
+        before: (container) async {
+          final db = container.read(databaseProvider);
+          final task = await (db.select(
+            db.tasks,
+          )..where((t) => t.id.equals(id))).getSingleOrNull();
+          if (task != null && !task.done && !task.deleted) {
+            await container.read(tasksRepositoryProvider).complete(task);
+          }
+        },
+      );
+    case 'check-item':
+      await syncInBackground(
+        before: (container) async {
+          final db = container.read(databaseProvider);
+          final item = await (db.select(
+            db.shoppingItems,
+          )..where((i) => i.id.equals(id))).getSingleOrNull();
+          if (item != null && !item.checked && !item.deleted) {
+            await container.read(shoppingRepositoryProvider).toggle(item);
+          }
+        },
+      );
+  }
 }
 
 /// Syncs with the server outside the app UI (widget actions, push messages)
-/// and refreshes the home screen widget. [before] runs first, e.g. to apply
+/// and refreshes the home screen widgets. [before] runs first, e.g. to apply
 /// a local change, and the widget is updated once before and once after
 /// the network round trip.
 Future<void> syncInBackground({
@@ -209,14 +296,28 @@ Future<void> syncInBackground({
 }
 
 Future<void> _publishFrom(ProviderContainer container) async {
-  final lists = await container.read(taskListsProvider.future);
-  final list = resolveSelectedList(
-    lists,
+  final taskLists = await container.read(taskListsProvider.future);
+  final taskList = resolveSelectedList(
+    taskLists,
     container.read(selectedListIdProvider('tasks')),
     (l) => l.id,
   );
-  if (list != null) await container.read(tasksOfListProvider(list.id).future);
+  if (taskList != null) {
+    await container.read(tasksOfListProvider(taskList.id).future);
+  }
   await container.read(membersProvider.future);
-  final json = container.read(widgetJsonProvider);
-  if (json != null) await _publish(json);
+  final tasksJson = container.read(widgetJsonProvider);
+  if (tasksJson != null) await _publish(_tasksWidget, tasksJson);
+
+  final shoppingLists = await container.read(shoppingListsProvider.future);
+  final shoppingList = resolveSelectedList(
+    shoppingLists,
+    container.read(selectedListIdProvider('shopping')),
+    (l) => l.id,
+  );
+  if (shoppingList != null) {
+    await container.read(shoppingItemsProvider(shoppingList.id).future);
+  }
+  final shoppingJson = container.read(shoppingWidgetJsonProvider);
+  if (shoppingJson != null) await _publish(_shoppingWidget, shoppingJson);
 }

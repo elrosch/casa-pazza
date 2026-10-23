@@ -161,10 +161,18 @@ bool isOverdue(DateTime due, {DateTime? now}) =>
 
 /// Text field at the top of a list for adding entries with the keyboard.
 class QuickAddField extends StatefulWidget {
-  const QuickAddField({super.key, required this.hint, required this.onAdd});
+  const QuickAddField({
+    super.key,
+    required this.hint,
+    required this.onAdd,
+    this.trailing,
+  });
 
   final String hint;
   final ValueChanged<String> onAdd;
+
+  /// Optional action next to the field, e.g. a scan button.
+  final Widget? trailing;
 
   @override
   State<QuickAddField> createState() => _QuickAddFieldState();
@@ -202,6 +210,7 @@ class _QuickAddFieldState extends State<QuickAddField> {
         decoration: InputDecoration(
           hintText: widget.hint,
           prefixIcon: const Icon(Icons.add),
+          suffixIcon: widget.trailing,
           border: InputBorder.none,
         ),
         onSubmitted: (_) => _submit(),

@@ -77,16 +77,22 @@ private data class WidgetTask(
 private data class WidgetData(
     val loggedIn: Boolean,
     val listName: String,
+    /** "Heute" view: only tasks due today, overdue or without a date. */
+    val todayOnly: Boolean,
     val tasks: List<WidgetTask>,
-)
+) {
+    fun visibleTasks(today: LocalDate): List<WidgetTask> =
+        if (!todayOnly) tasks else tasks.filter { it.due == null || !it.due.isAfter(today) }
+}
 
 private fun parse(json: String?): WidgetData {
-    if (json.isNullOrEmpty()) return WidgetData(false, "", emptyList())
+    if (json.isNullOrEmpty()) return WidgetData(false, "", false, emptyList())
     val root = JSONObject(json)
     val tasks = root.optJSONArray("tasks")
     return WidgetData(
         loggedIn = root.optBoolean("loggedIn", false),
         listName = root.optString("list"),
+        todayOnly = root.optBoolean("todayOnly", false),
         tasks = (0 until (tasks?.length() ?: 0)).map { i ->
             val t = tasks!!.getJSONObject(i)
             WidgetTask(
@@ -160,10 +166,11 @@ class TasksWidget : GlanceAppWidget() {
                 }
             }
             Spacer(GlanceModifier.height(6.dp))
+            val tasks = data.visibleTasks(LocalDate.now())
             when {
                 !data.loggedIn -> Hint("Zum Anmelden tippen", openApp)
-                data.tasks.isEmpty() -> Hint("Nichts zu tun.", openApp)
-                else -> TaskList(context, data.tasks)
+                tasks.isEmpty() -> Hint(if (data.todayOnly) "Heute nichts zu tun." else "Nichts zu tun.", openApp)
+                else -> TaskList(context, tasks)
             }
         }
     }

@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Voice input (speech_to_text). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!-- Cleartext HTTP: the PocketBase server runs on the home network without TLS. -->
     <application
@@ -29,6 +31,10 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Long-press shortcuts: voice input, barcode scan, new task. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
         <receiver
             android:name=".TasksWidgetReceiver"
@@ -52,6 +58,17 @@
         <meta-data
             android:name="flutter_deeplinking_enabled"
             android:value="false" />
+        <receiver
+            android:name=".ShoppingWidgetReceiver"
+            android:exported="true"
+            android:label="@string/shopping_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/shopping_widget_info" />
+        </receiver>
         <!-- Runs widgetBackgroundCallback for widget checkbox taps. -->
         <receiver
             android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
@@ -75,6 +92,10 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Speech recognition service used for voice input. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
         </intent>
     </queries>
 </manifest>

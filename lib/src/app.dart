@@ -54,16 +54,21 @@ class _CasaPazzaAppState extends ConsumerState<CasaPazzaApp>
 
   void _onWidgetLaunch(Uri? uri) {
     if (uri == null || !mounted) return;
+    if (uri.host == 'shopping') {
+      ref.read(routerProvider).go(AppRoutes.shopping);
+      return;
+    }
     _openRequest(WidgetRequest.fromUri(uri));
   }
 
-  /// Switches to the tasks tab, which opens the requested editor.
+  /// Switches to the tab that handles [request] (tasks by default), which
+  /// then opens the editor or scanner.
   void _openRequest(WidgetRequest? request) {
     if (!mounted) return;
     if (request != null) {
       ref.read(widgetRequestProvider.notifier).request(request);
     }
-    ref.read(routerProvider).go(AppRoutes.tasks);
+    ref.read(routerProvider).go(request?.route ?? AppRoutes.tasks);
   }
 
   /// Android shows no notification while the app is open: show a hint

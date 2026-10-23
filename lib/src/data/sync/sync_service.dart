@@ -125,6 +125,8 @@ class SyncService {
         name: r.get<String>('name'),
         color: Value(r.get<String>('color', '')),
         sort: Value(r.get<num>('sort', 0).toInt()),
+        isPrivate: Value(r.get<bool>('private', false)),
+        owner: Value(_nullIfEmpty(r.get<String>('owner', ''))),
         deleted: Value(r.get<bool>('deleted', false)),
         updated: Value(r.get<String>('updated')),
         dirty: const Value(false),
@@ -134,6 +136,8 @@ class SyncService {
         'name': row.name,
         'color': row.color,
         'sort': row.sort,
+        'private': row.isPrivate,
+        'owner': row.owner ?? '',
         'deleted': row.deleted,
       },
     ),
@@ -273,6 +277,7 @@ class SyncService {
       for (final c in _collections) {
         await _pull(c);
       }
+      await _dropHiddenTaskLists();
       if (await _ensureDefaultLists()) await _push();
       await _ensureRealtime();
       _lastSync = DateTime.now();
@@ -432,6 +437,29 @@ class SyncService {
                 email: Value(m.get<String>('email', '')),
               ),
             );
+      }
+    });
+  }
+
+  /// Lists that became private for someone else are no longer returned by
+  /// the server (and send no realtime event), so remove local copies that
+  /// the server does not know anymore, together with their tasks.
+  Future<void> _dropHiddenTaskLists() async {
+    final visible = await pb
+        .collection('task_lists')
+        .getFullList(batch: 500, fields: 'id');
+    final visibleIds = {for (final r in visible) r.id};
+    await db.transaction(() async {
+      final local = await (db.select(
+        db.taskLists,
+      )..where((l) => l.dirty.not())).get();
+      for (final list in local.where((l) => !visibleIds.contains(l.id))) {
+        await (db.delete(
+          db.tasks,
+        )..where((t) => t.list.equals(list.id) & t.dirty.not())).go();
+        await (db.delete(
+          db.taskLists,
+        )..where((l) => l.id.equals(list.id))).go();
       }
     });
   }

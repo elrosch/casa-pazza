@@ -63,6 +63,14 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
   }
 
   Future<void> _save() async {
+    final privateList =
+        ref
+            .read(taskListsProvider)
+            .value
+            ?.where((l) => l.id == widget.listId)
+            .firstOrNull
+            ?.isPrivate ??
+        false;
     if (_title.text.trim().isEmpty) return;
     // Recurring tasks need a start date to count from.
     final due = _repeatUnit != null && _due == null
@@ -75,7 +83,10 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
           listId: widget.listId,
           title: _title.text,
           notes: _notes.text,
-          assignee: _assignee,
+          // Private lists only allow the owner as assignee.
+          assignee: privateList && _assignee != ref.read(authProvider).userId
+              ? null
+              : _assignee,
           due: due,
           repeatUnit: _repeatUnit,
           repeatEvery: _repeatEvery,
@@ -94,11 +105,21 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  bool _isInPrivateList() =>
+      ref
+          .watch(taskListsProvider)
+          .value
+          ?.where((l) => l.id == widget.listId)
+          .firstOrNull
+          ?.isPrivate ??
+      false;
+
   @override
   Widget build(BuildContext context) {
     final members = ref.watch(membersProvider).value ?? const [];
     final me = ref.watch(authProvider.select((a) => a.userId));
     final theme = Theme.of(context);
+    final privateList = _isInPrivateList();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -131,27 +152,30 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
               textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(labelText: 'Notizen'),
             ),
-            const SizedBox(height: 20),
-            Text('Zuständig', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                ChoiceChip(
-                  label: const Text('Niemand'),
-                  selected: _assignee == null,
-                  onSelected: (_) => setState(() => _assignee = null),
-                ),
-                for (final m in members)
+            // Private lists are only visible to their owner: no assignment.
+            if (!privateList) ...[
+              const SizedBox(height: 20),
+              Text('Zuständig', style: theme.textTheme.labelLarge),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
                   ChoiceChip(
-                    avatar: const Icon(Icons.person_outline, size: 18),
-                    label: Text(m.id == me ? 'Ich' : members.nameOf(m.id)),
-                    selected: _assignee == m.id,
-                    onSelected: (_) => setState(() => _assignee = m.id),
+                    label: const Text('Niemand'),
+                    selected: _assignee == null,
+                    onSelected: (_) => setState(() => _assignee = null),
                   ),
-              ],
-            ),
+                  for (final m in members)
+                    ChoiceChip(
+                      avatar: const Icon(Icons.person_outline, size: 18),
+                      label: Text(m.id == me ? 'Ich' : members.nameOf(m.id)),
+                      selected: _assignee == m.id,
+                      onSelected: (_) => setState(() => _assignee = m.id),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 20),
             Row(
               children: [

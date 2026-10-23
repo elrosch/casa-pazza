@@ -10,4 +10,14 @@ void main() {
     expect(parseItemInput('  Brot  '), ('Brot', ''));
     expect(parseItemInput('Spülmittel'), ('Spülmittel', ''));
   });
+
+  test('parseItemInput understands spoken units', () {
+    expect(parseItemInput('2 Liter Milch'), ('Milch', '2 Liter'));
+    expect(parseItemInput('1 Kilo Mehl'), ('Mehl', '1 Kilo'));
+    expect(parseItemInput('3 Flaschen Wasser'), ('Wasser', '3 Flaschen'));
+    expect(parseItemInput('500 Gramm Hackfleisch'), (
+      'Hackfleisch',
+      '500 Gramm',
+    ));
+  });
 }
