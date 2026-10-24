@@ -42,7 +42,6 @@ import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetGlanceState
 import es.antonborri.home_widget.HomeWidgetGlanceStateDefinition
 import es.antonborri.home_widget.HomeWidgetGlanceWidgetReceiver
-import es.antonborri.home_widget.actionStartActivity
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -77,22 +76,53 @@ private data class WidgetTask(
 private data class WidgetData(
     val loggedIn: Boolean,
     val listName: String,
-    /** "Heute" view: only tasks due today, overdue or without a date. */
-    val todayOnly: Boolean,
+    /** Time range: "today", "all" or an ISO date (last day shown). */
+    val until: String,
+    /** Task type: "all", "oneOff" or "recurring". */
+    val type: String,
     val tasks: List<WidgetTask>,
 ) {
-    fun visibleTasks(today: LocalDate): List<WidgetTask> =
-        if (!todayOnly) tasks else tasks.filter { it.due == null || !it.due.isAfter(today) }
+    fun visibleTasks(today: LocalDate): List<WidgetTask> {
+        val limit: LocalDate? = when (until) {
+            "all" -> null
+            "today", "" -> today
+            // A chosen date that has passed falls back to today, like the app.
+            else -> LocalDate.parse(until).takeIf { !it.isBefore(today) } ?: today
+        }
+        return tasks.filter { task ->
+            val typeOk = when (type) {
+                "oneOff" -> !task.repeats
+                "recurring" -> task.repeats
+                else -> true
+            }
+            val dateOk = limit == null || task.due == null || !task.due.isAfter(limit)
+            typeOk && dateOk
+        }
+    }
+
+    fun emptyText(): String {
+        val what = when (type) {
+            "oneOff" -> " Einmaliges"
+            "recurring" -> " Wiederkehrendes"
+            else -> ""
+        }
+        return if (until == "today" || until.isEmpty()) "Heute nichts$what zu tun." else "Nichts$what zu tun."
+    }
 }
 
 private fun parse(json: String?): WidgetData {
-    if (json.isNullOrEmpty()) return WidgetData(false, "", false, emptyList())
+    if (json.isNullOrEmpty()) return WidgetData(false, "", "today", "all", emptyList())
     val root = JSONObject(json)
     val tasks = root.optJSONArray("tasks")
     return WidgetData(
         loggedIn = root.optBoolean("loggedIn", false),
         listName = root.optString("list"),
-        todayOnly = root.optBoolean("todayOnly", false),
+        // Older app versions sent "todayOnly" (1.1.0) instead of "until".
+        until = root.optString("until").takeIf { root.has("type") } ?: when {
+            root.optBoolean("todayOnly", false) -> "today"
+            else -> "all"
+        },
+        type = root.optString("type").ifEmpty { "all" },
         tasks = (0 until (tasks?.length() ?: 0)).map { i ->
             val t = tasks!!.getJSONObject(i)
             WidgetTask(
@@ -129,8 +159,8 @@ class TasksWidget : GlanceAppWidget() {
 
     @Composable
     private fun Content(context: Context, data: WidgetData) {
-        val openApp = actionStartActivity<MainActivity>(context, Uri.parse("casapazza://tasks"))
-        val addTask = actionStartActivity<MainActivity>(context, Uri.parse("casapazza://add-task"))
+        val openApp = actionOpenApp(context, "casapazza://tasks")
+        val addTask = actionOpenApp(context, "casapazza://add-task")
 
         Column(
             modifier = GlanceModifier
@@ -169,7 +199,7 @@ class TasksWidget : GlanceAppWidget() {
             val tasks = data.visibleTasks(LocalDate.now())
             when {
                 !data.loggedIn -> Hint("Zum Anmelden tippen", openApp)
-                tasks.isEmpty() -> Hint(if (data.todayOnly) "Heute nichts zu tun." else "Nichts zu tun.", openApp)
+                tasks.isEmpty() -> Hint(data.emptyText(), openApp)
                 else -> TaskList(context, tasks)
             }
         }
@@ -197,10 +227,7 @@ class TasksWidget : GlanceAppWidget() {
                     if (task.repeats) "↻" else null,
                 ).joinToString(" · ")
 
-                val editTask = actionStartActivity<MainActivity>(
-                    context,
-                    Uri.parse("casapazza://edit-task?id=${task.id}"),
-                )
+                val editTask = actionOpenApp(context, "casapazza://edit-task?id=${task.id}")
 
                 Row(
                     modifier = GlanceModifier.fillMaxWidth().padding(vertical = 2.dp),

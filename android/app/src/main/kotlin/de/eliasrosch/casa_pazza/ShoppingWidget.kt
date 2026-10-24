@@ -41,7 +41,6 @@ import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetGlanceState
 import es.antonborri.home_widget.HomeWidgetGlanceStateDefinition
 import es.antonborri.home_widget.HomeWidgetGlanceWidgetReceiver
-import es.antonborri.home_widget.actionStartActivity
 import org.json.JSONObject
 
 /** Key under which the Flutter app stores the widget data (see home_widget_sync.dart). */
@@ -101,8 +100,8 @@ class ShoppingWidget : GlanceAppWidget() {
 
     @Composable
     private fun Content(context: Context, data: ShoppingData) {
-        val openApp = actionStartActivity<MainActivity>(context, Uri.parse("casapazza://shopping"))
-        val scan = actionStartActivity<MainActivity>(context, Uri.parse("casapazza://scan"))
+        val openApp = actionOpenApp(context, "casapazza://shopping")
+        val scan = actionOpenApp(context, "casapazza://scan")
 
         Column(
             modifier = GlanceModifier

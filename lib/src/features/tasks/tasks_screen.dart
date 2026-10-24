@@ -58,7 +58,7 @@ class _TaskListViewState extends ConsumerState<_TaskListView> {
   Widget build(BuildContext context) {
     final list = widget.list;
     final tasks = ref.watch(tasksOfListProvider(list.id));
-    final filter = ref.watch(taskFilterProvider);
+    final view = ref.watch(taskViewProvider);
 
     // Taps on the home screen widget open the editor.
     final request = ref.watch(widgetRequestProvider);
@@ -107,30 +107,23 @@ class _TaskListViewState extends ConsumerState<_TaskListView> {
                   ),
           ),
           const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: SegmentedButton<TaskFilter>(
-              showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(value: TaskFilter.today, label: Text('Heute')),
-                ButtonSegment(value: TaskFilter.all, label: Text('Alle')),
-              ],
-              selected: {filter},
-              onSelectionChanged: (s) =>
-                  ref.read(taskFilterProvider.notifier).set(s.single),
-            ),
-          ),
+          _TaskViewChips(view: view),
           Expanded(
             child: AsyncBody(
               value: tasks,
               builder: (tasks) {
                 final now = DateTime.now();
                 final allOpen = tasks.where((t) => !t.done).toList();
-                final open = filter == TaskFilter.today
-                    ? allOpen.where((t) => isDueByToday(t, now)).toList()
-                    : allOpen;
-                final later = allOpen.length - open.length;
-                final done = tasks.where((t) => t.done).toList();
+                final open = allOpen.where((t) => view.shows(t, now)).toList();
+                // Tasks of the chosen type that are due after the range.
+                final later = view.unlimited
+                    ? 0
+                    : allOpen.where(view.matchesType).length - open.length;
+                final done = view.type == TaskType.recurring
+                    ? const <TaskRow>[]
+                    : tasks
+                          .where((t) => t.done && view.matchesType(t))
+                          .toList();
                 return ListView(
                   padding: const EdgeInsets.only(bottom: 24),
                   children: [
@@ -138,9 +131,7 @@ class _TaskListViewState extends ConsumerState<_TaskListView> {
                       Padding(
                         padding: const EdgeInsets.all(32),
                         child: Text(
-                          filter == TaskFilter.today
-                              ? 'Heute nichts zu tun.'
-                              : 'Nichts zu tun.',
+                          _emptyText(view),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -151,12 +142,12 @@ class _TaskListViewState extends ConsumerState<_TaskListView> {
                         leading: const Icon(Icons.event_outlined),
                         title: Text(
                           later == 1
-                              ? '1 weitere Aufgabe geplant'
-                              : '$later weitere Aufgaben geplant',
+                              ? '1 weitere Aufgabe später'
+                              : '$later weitere Aufgaben später',
                         ),
                         onTap: () => ref
-                            .read(taskFilterProvider.notifier)
-                            .set(TaskFilter.all),
+                            .read(taskViewProvider.notifier)
+                            .set(view.copyWith(unlimited: true)),
                       ),
                     if (done.isNotEmpty)
                       ListTile(
@@ -298,4 +289,137 @@ Future<({String name, bool isPrivate})?> _showNewListDialog(
       },
     ),
   );
+}
+
+String _emptyText(TaskView view) {
+  final what = switch (view.type) {
+    TaskType.all => '',
+    TaskType.oneOff => ' Einmaliges',
+    TaskType.recurring => ' Wiederkehrendes',
+  };
+  if (view.unlimited) return 'Nichts$what zu tun.';
+  if (view.until == null) return 'Heute nichts$what zu tun.';
+  return 'Bis ${formatDueDate(view.until!)} nichts$what zu tun.';
+}
+
+/// The task view controls: a time range menu (today, a chosen date, all
+/// dates) and which task types to show (one-off and/or recurring).
+class _TaskViewChips extends ConsumerWidget {
+  const _TaskViewChips({required this.view});
+
+  final TaskView view;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(taskViewProvider.notifier);
+
+    Future<void> pickDate() async {
+      final today = DateUtils.dateOnly(DateTime.now());
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: view.until ?? today,
+        firstDate: today,
+        lastDate: DateTime(today.year + 2),
+        helpText: 'Aufgaben anzeigen bis',
+      );
+      if (picked == null) return;
+      notifier.set(
+        view.copyWith(
+          until: () => picked == today ? null : picked,
+          unlimited: false,
+        ),
+      );
+    }
+
+    final rangeLabel = view.unlimited
+        ? 'Alle Termine'
+        : view.until == null
+        ? 'Bis heute'
+        : 'Bis ${formatDueDate(view.until!)}';
+
+    // Two independent toggles; "all" means both are on. The last active one
+    // cannot be switched off, which would always show an empty list.
+    final showOneOff = view.type != TaskType.recurring;
+    final showRecurring = view.type != TaskType.oneOff;
+    void setTypes({required bool oneOff, required bool recurring}) {
+      if (!oneOff && !recurring) return;
+      notifier.set(
+        view.copyWith(
+          type: oneOff && recurring
+              ? TaskType.all
+              : oneOff
+              ? TaskType.oneOff
+              : TaskType.recurring,
+        ),
+      );
+    }
+
+    // Two rows, so all chips fit on a phone without scrolling sideways;
+    // aligned to the start, as the tab's column centers its children.
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MenuAnchor(
+              menuChildren: [
+                MenuItemButton(
+                  leadingIcon: const Icon(Icons.today_outlined),
+                  onPressed: () => notifier.set(
+                    view.copyWith(until: () => null, unlimited: false),
+                  ),
+                  child: const Text('Bis heute'),
+                ),
+                MenuItemButton(
+                  leadingIcon: const Icon(Icons.edit_calendar_outlined),
+                  onPressed: pickDate,
+                  child: const Text('Bis Datum …'),
+                ),
+                MenuItemButton(
+                  leadingIcon: const Icon(Icons.all_inclusive),
+                  onPressed: () => notifier.set(view.copyWith(unlimited: true)),
+                  child: const Text('Alle Termine'),
+                ),
+              ],
+              builder: (context, controller, _) => InputChip(
+                avatar: const Icon(Icons.event_outlined, size: 18),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(rangeLabel),
+                    const Icon(Icons.arrow_drop_down, size: 18),
+                  ],
+                ),
+                onPressed: () =>
+                    controller.isOpen ? controller.close() : controller.open(),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 8,
+              children: [
+                FilterChip(
+                  label: const Text('Einmalig'),
+                  showCheckmark: false,
+                  selected: showOneOff,
+                  onSelected: (on) =>
+                      setTypes(oneOff: on, recurring: showRecurring),
+                ),
+                FilterChip(
+                  avatar: const Icon(Icons.repeat, size: 18),
+                  label: const Text('Wiederkehrend'),
+                  showCheckmark: false,
+                  selected: showRecurring,
+                  onSelected: (on) =>
+                      setTypes(oneOff: showOneOff, recurring: on),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

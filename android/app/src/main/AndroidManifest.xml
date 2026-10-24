@@ -10,10 +10,12 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
+        <!-- singleTask: widget buttons and app shortcuts reach a running app
+             via onNewIntent instead of only bringing its task to the front. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -27,6 +29,12 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Widget and shortcut URIs (casapazza://…) are handled by
+                 home_widget, not as routes. FlutterActivity reads this flag
+                 from the activity's meta-data only. -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="false" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -36,6 +44,14 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
+        <!-- Trampoline for widget buttons and app shortcuts, see LaunchActivity. -->
+        <activity
+            android:name=".LaunchActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <receiver
             android:name=".TasksWidgetReceiver"
             android:exported="true"
@@ -54,10 +70,6 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="assignments" />
-        <!-- Widget launch URIs (casapazza://…) are handled by home_widget, not as routes. -->
-        <meta-data
-            android:name="flutter_deeplinking_enabled"
-            android:value="false" />
         <receiver
             android:name=".ShoppingWidgetReceiver"
             android:exported="true"

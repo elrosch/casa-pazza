@@ -28,15 +28,23 @@ const _shoppingWidget = (
 String buildWidgetJson({
   required bool loggedIn,
   String listName = '',
-  bool todayOnly = false,
+  TaskView view = TaskView.today,
   List<Map<String, Object?>> tasks = const [],
 }) => jsonEncode({
   'loggedIn': loggedIn,
   'list': listName,
-  // The widget filters by date itself, so it stays right after midnight.
-  'todayOnly': todayOnly,
+  // The widget filters itself, so "today" stays right after midnight.
+  'until': view.unlimited
+      ? 'all'
+      : view.until == null
+      ? 'today'
+      : _isoDate(view.until!),
+  'type': view.type.name,
   'tasks': tasks,
 });
+
+String _isoDate(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 /// Widget data for the open tasks of the selected task list, or null while
 /// still loading.
@@ -57,19 +65,16 @@ final widgetJsonProvider = Provider<String?>((ref) {
   if (tasks == null) return null;
   final members = ref.watch(membersProvider).value ?? const [];
 
-  String isoDate(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
   return buildWidgetJson(
     loggedIn: true,
     listName: list.name,
-    todayOnly: ref.watch(taskFilterProvider) == TaskFilter.today,
+    view: ref.watch(taskViewProvider),
     tasks: [
       for (final t in tasks.where((t) => !t.done).take(60))
         {
           'id': t.id,
           'title': t.title,
-          'due': t.due == null ? '' : isoDate(t.due!),
+          'due': t.due == null ? '' : _isoDate(t.due!),
           'assignee': t.assignee == auth.userId
               ? 'Ich'
               : members.nameOf(t.assignee),

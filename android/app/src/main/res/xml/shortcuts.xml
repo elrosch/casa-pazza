@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Static app shortcuts. They start MainActivity like the home screen
-     widgets do (home_widget launch action + casapazza:// URI), see
-     WidgetRequest.fromUri in home_widget_sync.dart. -->
+<!-- Static app shortcuts. Like the home screen widgets they open the app
+     through LaunchActivity with a casapazza:// URI, see WidgetRequest.fromUri
+     in home_widget_sync.dart. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
         android:shortcutId="voice"
@@ -10,10 +10,10 @@
         android:shortcutShortLabel="@string/shortcut_voice_short"
         android:shortcutLongLabel="@string/shortcut_voice_long">
         <intent
-            android:action="es.antonborri.home_widget.action.LAUNCH"
+            android:action="android.intent.action.VIEW"
             android:data="casapazza://voice"
             android:targetPackage="de.eliasrosch.casa_pazza"
-            android:targetClass="de.eliasrosch.casa_pazza.MainActivity" />
+            android:targetClass="de.eliasrosch.casa_pazza.LaunchActivity" />
     </shortcut>
     <shortcut
         android:shortcutId="scan"
@@ -22,10 +22,10 @@
         android:shortcutShortLabel="@string/shortcut_scan_short"
         android:shortcutLongLabel="@string/shortcut_scan_long">
         <intent
-            android:action="es.antonborri.home_widget.action.LAUNCH"
+            android:action="android.intent.action.VIEW"
             android:data="casapazza://scan"
             android:targetPackage="de.eliasrosch.casa_pazza"
-            android:targetClass="de.eliasrosch.casa_pazza.MainActivity" />
+            android:targetClass="de.eliasrosch.casa_pazza.LaunchActivity" />
     </shortcut>
     <shortcut
         android:shortcutId="add_task"
@@ -34,9 +34,9 @@
         android:shortcutShortLabel="@string/shortcut_task_short"
         android:shortcutLongLabel="@string/shortcut_task_long">
         <intent
-            android:action="es.antonborri.home_widget.action.LAUNCH"
+            android:action="android.intent.action.VIEW"
             android:data="casapazza://add-task"
             android:targetPackage="de.eliasrosch.casa_pazza"
-            android:targetClass="de.eliasrosch.casa_pazza.MainActivity" />
+            android:targetClass="de.eliasrosch.casa_pazza.LaunchActivity" />
     </shortcut>
 </shortcuts>
