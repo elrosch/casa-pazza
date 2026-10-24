@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-24
+
+### Added
+
+- Task view controls: show tasks due by today, by any chosen date or all
+  dates, and independently one-off and/or recurring tasks. The choice is
+  remembered and the task widget follows it.
+
+### Fixed
+
+- Widget buttons (scan, add task, edit task) and app shortcuts did nothing
+  when the app was already running in the background.
+- After the app had been closed by the system, reopening it could repeat the
+  last widget action (e.g. open „Neue Aufgabe" again).
+
 ## [1.1.0] - 2026-10-24
 
 ### Added
@@ -65,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Docker image.
 - Web app for tasks and shopping lists, served by the same server.
 
+[1.2.0]: https://github.com/elrosch/casa-pazza/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/elrosch/casa-pazza/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/elrosch/casa-pazza/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/elrosch/casa-pazza/releases/tag/v1.0.0
