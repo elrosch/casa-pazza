@@ -151,11 +151,15 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet> {
       if (list == null) return;
       final repo = ref.read(shoppingRepositoryProvider);
       final items = text.split(RegExp(r'\s*,\s*')).where((s) => s.isNotEmpty);
+      final already = <String>[];
       for (final item in items) {
         final (name, quantity) = parseItemInput(item);
-        await repo.addItem(list.id, name, quantity: quantity);
+        final result = await repo.addItem(list.id, name, quantity: quantity);
+        if (result == AddItemResult.alreadyOnList) already.add(name);
       }
-      message = 'Auf „${list.name}“: ${items.join(', ')}';
+      message = already.length == items.length
+          ? 'Steht schon auf „${list.name}“: ${already.join(', ')}'
+          : 'Auf „${list.name}“: ${items.join(', ')}';
     } else {
       final list = await _taskList();
       if (list == null) return;

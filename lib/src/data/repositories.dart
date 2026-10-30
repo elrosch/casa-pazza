@@ -373,6 +373,24 @@ String germanSortKey(String s) => s
     .replaceAll('ü', 'u')
     .replaceAll('ß', 'ss');
 
+/// What [ShoppingRepository.addItem] did.
+enum AddItemResult {
+  added,
+
+  /// Already open on the list; only a given quantity was taken over.
+  alreadyOnList,
+
+  /// Was checked off ("im Wagen") and is open again.
+  reactivated;
+
+  /// Hint for the user, null for a plain add.
+  String? hint(String name) => switch (this) {
+    added => null,
+    alreadyOnList => '„$name" steht schon auf der Liste',
+    reactivated => '„$name" wieder auf der Liste',
+  };
+}
+
 class ShoppingRepository extends _Repository {
   ShoppingRepository(super.ref);
 
@@ -417,25 +435,70 @@ class ShoppingRepository extends _Repository {
     pushLater();
   }
 
-  Future<void> addItem(
+  /// Adds an item unless it is already on the list (same name, ignoring
+  /// case and umlauts): an open duplicate only takes over a given quantity,
+  /// a checked one ("im Wagen") becomes open again.
+  Future<AddItemResult> addItem(
     String listId,
     String name, {
     String quantity = '',
   }) async {
-    await db
-        .into(db.shoppingItems)
-        .insert(
-          ShoppingItemsCompanion.insert(
-            id: newRecordId(),
-            household: auth.householdId,
-            list: listId,
-            name: name.trim(),
-            quantity: Value(quantity.trim()),
-            sort: Value(DateTime.now().millisecondsSinceEpoch ~/ 1000),
+    final key = germanSortKey(name);
+    final qty = quantity.trim();
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final result = await db.transaction(() async {
+      final existing =
+          (await (db.select(
+                db.shoppingItems,
+              )..where((i) => i.list.equals(listId) & i.deleted.not())).get())
+              .where((i) => germanSortKey(i.name) == key)
+              .toList();
+      final open = existing.where((i) => !i.checked).firstOrNull;
+      if (open != null) {
+        if (qty.isNotEmpty && qty != open.quantity) {
+          await (db.update(
+            db.shoppingItems,
+          )..where((i) => i.id.equals(open.id))).write(
+            ShoppingItemsCompanion(
+              quantity: Value(qty),
+              dirty: const Value(true),
+            ),
+          );
+        }
+        return AddItemResult.alreadyOnList;
+      }
+      final inCart = existing.firstOrNull;
+      if (inCart != null) {
+        await (db.update(
+          db.shoppingItems,
+        )..where((i) => i.id.equals(inCart.id))).write(
+          ShoppingItemsCompanion(
+            checked: const Value(false),
+            checkedBy: const Value(null),
+            quantity: qty.isEmpty ? const Value.absent() : Value(qty),
+            sort: Value(now),
             dirty: const Value(true),
           ),
         );
+        return AddItemResult.reactivated;
+      }
+      await db
+          .into(db.shoppingItems)
+          .insert(
+            ShoppingItemsCompanion.insert(
+              id: newRecordId(),
+              household: auth.householdId,
+              list: listId,
+              name: name.trim(),
+              quantity: Value(qty),
+              sort: Value(now),
+              dirty: const Value(true),
+            ),
+          );
+      return AddItemResult.added;
+    });
     pushLater();
+    return result;
   }
 
   Future<void> updateItem(

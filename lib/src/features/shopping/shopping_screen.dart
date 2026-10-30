@@ -132,9 +132,19 @@ class _ShoppingListView extends ConsumerWidget {
           children: [
             QuickAddField(
               hint: 'Artikel hinzufügen, z. B. 2 l Milch',
-              onAdd: (text) {
+              onAdd: (text) async {
                 final (name, quantity) = parseItemInput(text);
-                repo.addItem(list.id, name, quantity: quantity);
+                final result = await repo.addItem(
+                  list.id,
+                  name,
+                  quantity: quantity,
+                );
+                final hint = result.hint(name);
+                if (hint != null && context.mounted) {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(SnackBar(content: Text(hint)));
+                }
               },
               // Browsers only allow the camera over HTTPS; the home server
               // usually serves plain HTTP, so scanning is Android only.

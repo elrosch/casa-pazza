@@ -74,10 +74,17 @@ class _ScannedProductSheetState extends ConsumerState<ScannedProductSheet> {
 
   Future<void> _add() async {
     if (_name.text.trim().isEmpty) return;
-    await ref
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await ref
         .read(shoppingRepositoryProvider)
         .addItem(widget.listId, _name.text, quantity: _quantity.text);
     if (mounted) Navigator.of(context).pop();
+    final hint = result.hint(_name.text.trim());
+    if (hint != null) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(hint)));
+    }
   }
 
   @override
