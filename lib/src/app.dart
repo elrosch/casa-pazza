@@ -112,11 +112,12 @@ class _CasaPazzaAppState extends ConsumerState<CasaPazzaApp>
       title: 'Casa Pazza',
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: _messenger,
-      // "System" follows the phone's light/dark setting; Gruvbox is fixed.
+      // "System" follows the phone's light/dark setting; the others are fixed.
       theme: switch (themeChoice) {
+        AppThemeChoice.system || AppThemeChoice.light => AppTheme.light,
+        AppThemeChoice.dark => AppTheme.dark,
         AppThemeChoice.gruvboxLight => AppTheme.gruvboxLight,
         AppThemeChoice.gruvboxDark => AppTheme.gruvboxDark,
-        AppThemeChoice.system => AppTheme.light,
       },
       darkTheme: AppTheme.dark,
       themeMode: themeChoice == AppThemeChoice.system

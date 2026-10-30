@@ -30,6 +30,16 @@ void main() {
     expect(AppTheme.gruvboxLight.colorScheme.brightness, Brightness.light);
   });
 
+  test('choices in the settings order', () {
+    expect(AppThemeChoice.values.map((c) => c.label), [
+      'System',
+      'Hell',
+      'Dunkel',
+      'Gruvbox Hell',
+      'Gruvbox Dunkel',
+    ]);
+  });
+
   test('theme choice is stored and defaults to system', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();

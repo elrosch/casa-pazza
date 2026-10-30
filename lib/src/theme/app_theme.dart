@@ -7,6 +7,8 @@ import '../data/auth.dart';
 enum AppThemeChoice {
   /// The default Casa Pazza colors, light or dark following the system.
   system('System'),
+  light('Hell'),
+  dark('Dunkel'),
   gruvboxLight('Gruvbox Hell'),
   gruvboxDark('Gruvbox Dunkel');
 

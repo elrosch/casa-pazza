@@ -55,7 +55,6 @@ class TaskTile extends ConsumerWidget {
         ),
         title: Text.rich(
           TextSpan(
-            text: task.title,
             children: [
               // The letter repeats the color for color blindness and
               // bright sunlight; D (default) needs no extra mark.
@@ -67,6 +66,7 @@ class TaskTile extends ConsumerWidget {
                     color: priorityColor,
                   ),
                 ),
+              TextSpan(text: task.title),
             ],
           ),
           style: task.done
@@ -160,7 +160,7 @@ class _PriorityBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(left: 8),
+      margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
         border: Border.all(color: color, width: 1.5),

@@ -89,10 +89,22 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('priority letter only for A–C', (tester) async {
+  testWidgets('priority letter only for A–C, left of the title', (
+    tester,
+  ) async {
     await pump(tester, const TasksScreen());
     expect(find.text('A'), findsOneWidget);
     expect(find.text('D'), findsNothing);
+    final title = find.textContaining('Reifenwechsel', findRichText: true);
+    expect(
+      tester.getTopLeft(find.text('A')).dx,
+      lessThan(tester.getTopLeft(title).dx + 40),
+      reason: 'badge starts the title line',
+    );
+    expect(
+      tester.getTopLeft(find.text('A')).dx,
+      lessThan(tester.getCenter(title).dx),
+    );
     await finish(tester);
   });
 
