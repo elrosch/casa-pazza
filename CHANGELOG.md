@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-10-30
+
+### Added
+
+- Undo: checking off, postponing or deleting a task and checking off or
+  removing a shopping item can be undone from the snackbar.
+- Swipe actions on tasks: right to complete, left to postpone to tomorrow.
+- Shopping suggestions from earlier purchases while typing, and
+  „Häufig"-chips for the most frequent items, with their last quantity.
+- Priority letter (A–C) next to the task title, in addition to the color.
+- Shopping mode: items grouped by store aisle with checked items „Im
+  Wagen"; the screen stays on. Alphabetical sorting remains the default.
+- History („Verlauf" in the task menu): who completed what and when, with
+  counts per person for the last 30 days.
+- Daily digest: an optional push at a chosen time with the tasks due
+  today, for one's own or all tasks (Einstellungen → Erinnerungen).
+
+### Upgrade notes
+
+- History and the daily digest need the new server image.
+
 ## [1.3.0] - 2026-10-30
 
 ### Added
@@ -101,6 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Docker image.
 - Web app for tasks and shopping lists, served by the same server.
 
+[1.4.0]: https://github.com/elrosch/casa-pazza/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/elrosch/casa-pazza/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/elrosch/casa-pazza/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/elrosch/casa-pazza/compare/v1.0.1...v1.1.0
