@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-10-30
+
+### Added
+
+- Themes: „System" (default colors, light or dark like the device),
+  „Gruvbox Hell" and „Gruvbox Dunkel", chosen in the settings.
+- Task priorities A–D (default D), shown as a color in the list and the
+  task widget (A red, B yellow, C green, D aqua); tasks are sorted by
+  priority, then by due date.
+- Microphone buttons on both home screen widgets. In the shopping widget a
+  plain item like „Milch" goes to the shopping list.
+
+### Changed
+
+- Shopping lists are sorted alphabetically, open items first.
+
+### Upgrade notes
+
+- Priorities need the new server image; update the server, otherwise they
+  are reset to D on sync.
+
 ## [1.2.0] - 2026-10-24
 
 ### Added
@@ -80,6 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Docker image.
 - Web app for tasks and shopping lists, served by the same server.
 
+[1.3.0]: https://github.com/elrosch/casa-pazza/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/elrosch/casa-pazza/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/elrosch/casa-pazza/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/elrosch/casa-pazza/compare/v1.0.0...v1.0.1
