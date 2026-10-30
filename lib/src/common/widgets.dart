@@ -166,6 +166,7 @@ class QuickAddField extends StatefulWidget {
     required this.hint,
     required this.onAdd,
     this.trailing,
+    this.below,
   });
 
   final String hint;
@@ -173,6 +174,10 @@ class QuickAddField extends StatefulWidget {
 
   /// Optional action next to the field, e.g. a scan button.
   final Widget? trailing;
+
+  /// Optional content under the field, rebuilt as the user types, e.g.
+  /// suggestions; [clear] empties the field and keeps the keyboard open.
+  final Widget Function(String text, bool focused, VoidCallback clear)? below;
 
   @override
   State<QuickAddField> createState() => _QuickAddFieldState();
@@ -183,10 +188,26 @@ class _QuickAddFieldState extends State<QuickAddField> {
   final _focus = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.below != null) {
+      _controller.addListener(_rebuild);
+      _focus.addListener(_rebuild);
+    }
+  }
+
+  void _rebuild() => setState(() {});
+
+  @override
   void dispose() {
     _controller.dispose();
     _focus.dispose();
     super.dispose();
+  }
+
+  void _clear() {
+    _controller.clear();
+    _focus.requestFocus();
   }
 
   void _submit() {
@@ -200,7 +221,7 @@ class _QuickAddFieldState extends State<QuickAddField> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final field = Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
       child: TextField(
         controller: _controller,
@@ -216,5 +237,28 @@ class _QuickAddFieldState extends State<QuickAddField> {
         onSubmitted: (_) => _submit(),
       ),
     );
+    final below = widget.below;
+    if (below == null) return field;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [field, below(_controller.text, _focus.hasFocus, _clear)],
+    );
   }
+}
+
+/// Shows [message] with a „Rückgängig" action for a few seconds.
+void showUndoSnackBar(
+  BuildContext context,
+  String message, {
+  required VoidCallback onUndo,
+}) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(label: 'Rückgängig', onPressed: onUndo),
+      ),
+    );
 }

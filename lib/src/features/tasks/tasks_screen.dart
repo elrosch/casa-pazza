@@ -8,6 +8,7 @@ import '../../data/auth.dart';
 import '../../data/db/database.dart';
 import '../../data/repositories.dart';
 import '../../data/task_filter.dart';
+import '../history/history_screen.dart';
 import '../voice/voice_input_sheet.dart';
 import '../widget/home_widget_sync.dart';
 import 'task_editor.dart';
@@ -88,6 +89,7 @@ class _TaskListViewState extends ConsumerState<_TaskListView> {
                 : list.isPrivate
                 ? 'Mit Haushalt teilen'
                 : 'Privat machen',
+            showHistory: true,
             onSelected: _onMenu,
           ),
         ],
@@ -234,6 +236,10 @@ class _TaskListViewState extends ConsumerState<_TaskListView> {
               '„${list.name}“ und alle Aufgaben darin werden für alle gelöscht.',
         );
         if (ok) await _repo.deleteList(list.id);
+      case ListAction.history:
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const HistoryScreen()));
       case ListAction.clearChecked:
         break;
     }

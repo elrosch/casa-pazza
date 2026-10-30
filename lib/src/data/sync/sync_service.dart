@@ -181,6 +181,31 @@ class SyncService {
         'deleted': row.deleted,
       },
     ),
+    _SyncedCollection<$CompletionsTable, CompletionRow>(
+      name: 'completions',
+      table: db.completions,
+      fromRecord: (r) => CompletionsCompanion.insert(
+        id: r.id,
+        household: r.get<String>('household'),
+        task: Value(_nullIfEmpty(r.get<String>('task', ''))),
+        list: r.get<String>('list'),
+        title: r.get<String>('title'),
+        user: r.get<String>('user'),
+        doneAt: _parseDate(r.get<String>('done_at', '')) ?? DateTime.now(),
+        deleted: Value(r.get<bool>('deleted', false)),
+        updated: Value(r.get<String>('updated')),
+        dirty: const Value(false),
+      ),
+      toBody: (row) => {
+        'household': row.household,
+        'task': row.task ?? '',
+        'list': row.list,
+        'title': row.title,
+        'user': row.user,
+        'done_at': _formatDate(row.doneAt),
+        'deleted': row.deleted,
+      },
+    ),
     _SyncedCollection<$ShoppingListsTable, ShoppingListRow>(
       name: 'shopping_lists',
       table: db.shoppingLists,
@@ -460,6 +485,9 @@ class SyncService {
         await (db.delete(
           db.tasks,
         )..where((t) => t.list.equals(list.id) & t.dirty.not())).go();
+        await (db.delete(
+          db.completions,
+        )..where((c) => c.list.equals(list.id) & c.dirty.not())).go();
         await (db.delete(
           db.taskLists,
         )..where((l) => l.id.equals(list.id))).go();

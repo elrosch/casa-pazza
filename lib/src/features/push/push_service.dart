@@ -102,11 +102,17 @@ Future<void> unregisterPushDevice(PocketBase pb) async {
 /// function that stops listening.
 Future<void> Function() listenForPushInteractions({
   required void Function(String taskId) onOpen,
+  required void Function() onOpenDigest,
   required void Function(RemoteMessage message) onForeground,
 }) {
   void open(RemoteMessage? message) {
-    final taskId = message == null ? null : taskIdOf(message);
-    if (taskId != null) onOpen(taskId);
+    if (message == null) return;
+    final taskId = taskIdOf(message);
+    if (taskId != null) {
+      onOpen(taskId);
+    } else if (message.data['type'] == 'digest') {
+      onOpenDigest();
+    }
   }
 
   FirebaseMessaging.instance.getInitialMessage().then(open);

@@ -9,6 +9,8 @@ import '../../data/auth.dart';
 import '../../data/repositories.dart';
 import '../../data/sync/sync_service.dart';
 import '../../theme/app_theme.dart';
+import '../push/push_service.dart';
+import '../reminders/reminder_settings.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -83,6 +85,10 @@ class SettingsScreen extends ConsumerWidget {
             }),
             onTap: () => ref.read(syncServiceProvider)?.syncNow(),
           ),
+          if (ref.watch(pushAvailableProvider)) ...[
+            _Section('Erinnerungen'),
+            const _ReminderTiles(),
+          ],
           _Section('Darstellung'),
           ListTile(
             leading: const Icon(Icons.palette_outlined),
@@ -257,6 +263,100 @@ class _Section extends StatelessWidget {
           color: theme.colorScheme.primary,
         ),
       ),
+    );
+  }
+}
+
+/// Daily digest: on/off, time and scope, saved on the server.
+class _ReminderTiles extends ConsumerStatefulWidget {
+  const _ReminderTiles();
+
+  @override
+  ConsumerState<_ReminderTiles> createState() => _ReminderTilesState();
+}
+
+class _ReminderTilesState extends ConsumerState<_ReminderTiles> {
+  bool _saving = false;
+
+  Future<void> _save(ReminderSettings settings) async {
+    setState(() => _saving = true);
+    try {
+      await saveReminderSettings(ref, settings);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Nicht gespeichert: ${describeError(e)}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ReminderSettings.of(ref.watch(authProvider));
+    final parts = settings.time.split(':');
+    return Column(
+      children: [
+        SwitchListTile(
+          secondary: const Icon(Icons.notifications_active_outlined),
+          title: const Text('Tägliche Übersicht'),
+          subtitle: const Text('Push mit den heute fälligen Aufgaben'),
+          value: settings.enabled,
+          onChanged: _saving
+              ? null
+              : (on) => _save(
+                  ReminderSettings(
+                    time: on ? '08:00' : '',
+                    scope: settings.scope,
+                  ),
+                ),
+        ),
+        if (settings.enabled) ...[
+          ListTile(
+            leading: const Icon(Icons.schedule),
+            title: const Text('Uhrzeit'),
+            trailing: Text(
+              settings.time,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            enabled: !_saving,
+            onTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay(
+                  hour: int.parse(parts[0]),
+                  minute: int.parse(parts[1]),
+                ),
+              );
+              if (picked == null) return;
+              await _save(
+                ReminderSettings(
+                  time: formatHm(picked.hour, picked.minute),
+                  scope: settings.scope,
+                ),
+              );
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(72, 0, 16, 8),
+            child: SegmentedButton<String>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(value: 'mine', label: Text('Mir zugewiesen')),
+                ButtonSegment(value: 'household', label: Text('Alle')),
+              ],
+              selected: {settings.scope},
+              onSelectionChanged: _saving
+                  ? null
+                  : (s) => _save(
+                      ReminderSettings(time: settings.time, scope: s.single),
+                    ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

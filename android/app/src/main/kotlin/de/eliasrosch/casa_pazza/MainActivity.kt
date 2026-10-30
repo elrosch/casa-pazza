@@ -5,8 +5,11 @@ import android.app.NotificationManager
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,6 +22,24 @@ class MainActivity : FlutterActivity() {
         }
         super.onCreate(savedInstanceState)
         createNotificationChannel()
+    }
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        // Shopping mode keeps the screen on (see keep_screen_on.dart).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "casa_pazza/screen")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "keepOn") {
+                    if (call.arguments == true) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    } else {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                    result.success(null)
+                } else {
+                    result.notImplemented()
+                }
+            }
     }
 
     private fun isStale(intent: Intent): Boolean {

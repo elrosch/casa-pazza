@@ -84,6 +84,16 @@ class ShoppingItems extends Table with SyncColumns {
   IntColumn get sort => integer().withDefault(const Constant(0))();
 }
 
+/// Completion log for the „Verlauf" screen: one entry per check-off.
+@DataClassName('CompletionRow')
+class Completions extends Table with SyncColumns {
+  TextColumn get task => text().nullable()();
+  TextColumn get list => text()();
+  TextColumn get title => text()();
+  TextColumn get user => text()();
+  DateTimeColumn get doneAt => dateTime()();
+}
+
 /// Last pulled server `updated` timestamp per collection.
 class SyncCursors extends Table {
   TextColumn get collection => text()();
@@ -102,6 +112,7 @@ class SyncCursors extends Table {
     ShoppingLists,
     ShoppingItems,
     SyncCursors,
+    Completions,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -121,7 +132,7 @@ class AppDatabase extends _$AppDatabase {
       );
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -136,6 +147,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 3) {
         await m.addColumn(tasks, tasks.priority);
+      }
+      if (from < 4) {
+        await m.createTable(completions);
       }
     },
   );

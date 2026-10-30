@@ -68,7 +68,7 @@ class ListSwitcherTitle extends StatelessWidget {
   }
 }
 
-enum ListAction { create, rename, delete, clearChecked, togglePrivate }
+enum ListAction { create, rename, delete, clearChecked, togglePrivate, history }
 
 /// Overflow menu with the rarely needed list management actions.
 class ListMenuButton extends StatelessWidget {
@@ -78,6 +78,7 @@ class ListMenuButton extends StatelessWidget {
     this.canDelete = false,
     this.showClearChecked = false,
     this.togglePrivateLabel,
+    this.showHistory = false,
   });
 
   final ValueChanged<ListAction> onSelected;
@@ -87,11 +88,19 @@ class ListMenuButton extends StatelessWidget {
   /// Shows the visibility action with this label (null hides it).
   final String? togglePrivateLabel;
 
+  /// Shows the entry for the completion history.
+  final bool showHistory;
+
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<ListAction>(
       onSelected: onSelected,
       itemBuilder: (_) => [
+        if (showHistory)
+          const PopupMenuItem(
+            value: ListAction.history,
+            child: Text('Verlauf'),
+          ),
         if (showClearChecked)
           const PopupMenuItem(
             value: ListAction.clearChecked,

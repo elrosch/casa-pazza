@@ -52,6 +52,7 @@ func assignmentMessage(actorName, taskTitle string) (title, body string) {
 
 func registerPush(app core.App) {
 	sender := &fcmSender{app: app}
+	registerReminders(app, sender)
 
 	app.OnRecordCreateRequest("tasks").BindFunc(func(e *core.RecordRequestEvent) error {
 		if err := e.Next(); err != nil {

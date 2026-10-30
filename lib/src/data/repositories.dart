@@ -239,17 +239,80 @@ class TasksRepository extends _Repository {
     if (unit != null) {
       next = nextDueDate(unit: unit, every: task.repeatEvery, now: now);
     }
+    await db.transaction(() async {
+      await (db.update(db.tasks)..where((t) => t.id.equals(task.id))).write(
+        TasksCompanion(
+          done: Value(next == null),
+          due: next == null ? const Value.absent() : Value(next),
+          doneAt: Value(now),
+          doneBy: Value(auth.userId),
+          dirty: const Value(true),
+        ),
+      );
+      // Log the completion for the history ("Verlauf").
+      await db
+          .into(db.completions)
+          .insert(
+            CompletionsCompanion.insert(
+              id: newRecordId(),
+              household: task.household,
+              task: Value(task.id),
+              list: task.list,
+              title: task.title,
+              user: auth.userId,
+              doneAt: now,
+              dirty: const Value(true),
+            ),
+          );
+    });
+    pushLater();
+    return next;
+  }
+
+  /// Undo of [complete]: restores the task and drops its newest completion
+  /// entry by the current user.
+  Future<void> undoComplete(TaskRow before) async {
+    await db.transaction(() async {
+      await db.update(db.tasks).replace(before.copyWith(dirty: true));
+      final latest =
+          await (db.select(db.completions)
+                ..where(
+                  (c) =>
+                      c.task.equals(before.id) &
+                      c.user.equals(auth.userId) &
+                      c.deleted.not(),
+                )
+                ..orderBy([(c) => OrderingTerm.desc(c.doneAt)])
+                ..limit(1))
+              .getSingleOrNull();
+      if (latest != null) {
+        await (db.update(
+          db.completions,
+        )..where((c) => c.id.equals(latest.id))).write(
+          const CompletionsCompanion(deleted: Value(true), dirty: Value(true)),
+        );
+      }
+    });
+    pushLater();
+  }
+
+  /// Moves a task's due date to tomorrow ("Morgen" swipe).
+  Future<void> postpone(TaskRow task) async {
+    final now = DateTime.now();
     await (db.update(db.tasks)..where((t) => t.id.equals(task.id))).write(
       TasksCompanion(
-        done: Value(next == null),
-        due: next == null ? const Value.absent() : Value(next),
-        doneAt: Value(now),
-        doneBy: Value(auth.userId),
+        due: Value(DateTime(now.year, now.month, now.day + 1)),
         dirty: const Value(true),
       ),
     );
     pushLater();
-    return next;
+  }
+
+  /// Puts a task back into an earlier state: undo of complete, postpone or
+  /// delete.
+  Future<void> restoreTask(TaskRow before) async {
+    await db.update(db.tasks).replace(before.copyWith(dirty: true));
+    pushLater();
   }
 
   Future<void> reopen(TaskRow task) async {
@@ -405,6 +468,12 @@ class ShoppingRepository extends _Repository {
         dirty: const Value(true),
       ),
     );
+    pushLater();
+  }
+
+  /// Puts an item back into an earlier state: undo of check-off or delete.
+  Future<void> restoreItem(ShoppingItemRow before) async {
+    await db.update(db.shoppingItems).replace(before.copyWith(dirty: true));
     pushLater();
   }
 

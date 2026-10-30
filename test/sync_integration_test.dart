@@ -157,6 +157,12 @@ void main() {
       expect(next, DateTime(now.year, now.month, now.day + 7));
       await ben.sync();
       await anna.sync();
+      // Ben's completion shows up in Anna's history.
+      final log = await anna.db.select(anna.db.completions).get();
+      expect(log.map((c) => (c.title, c.user)), [
+        ('Müll rausbringen', ben.userId),
+      ]);
+
       final annaTask = await anna.db.select(anna.db.tasks).getSingle();
       expect(annaTask.done, isFalse);
       expect(annaTask.due, next);
@@ -243,6 +249,25 @@ void main() {
       expect(
         (await ben.db.select(ben.db.tasks).get()).map((t) => t.title),
         isNot(contains('Geschenk kaufen')),
+      );
+
+      // Completions in a private list stay private.
+      final secretId = await anna.tasks.createList('Privat', isPrivate: true);
+      await anna.tasks.saveTask(listId: secretId, title: 'Überraschung');
+      await anna.sync();
+      final secret = await (anna.db.select(
+        anna.db.tasks,
+      )..where((t) => t.list.equals(secretId))).getSingle();
+      await anna.tasks.complete(secret);
+      await anna.sync();
+      await ben.sync();
+      expect(
+        (await ben.db.select(ben.db.completions).get()).map((c) => c.title),
+        isNot(contains('Überraschung')),
+      );
+      expect(
+        (await anna.db.select(anna.db.completions).get()).map((c) => c.title),
+        contains('Überraschung'),
       );
 
       // Ben cannot make Anna's shared list private.

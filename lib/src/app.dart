@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'data/sync/sync_service.dart';
 import 'features/push/push_service.dart';
+import 'features/reminders/reminder_settings.dart';
 import 'features/widget/home_widget_sync.dart';
 import 'routing/app_router.dart';
 import 'theme/app_theme.dart';
@@ -39,6 +40,8 @@ class _CasaPazzaAppState extends ConsumerState<CasaPazzaApp>
     if (ref.read(pushAvailableProvider)) {
       _stopPushListening = listenForPushInteractions(
         onOpen: (taskId) => _openRequest(EditTaskRequest(taskId)),
+        // The daily digest opens the tasks tab ("Bis heute").
+        onOpenDigest: () => _openRequest(null),
         onForeground: _showForegroundPush,
       );
     }
@@ -101,6 +104,7 @@ class _CasaPazzaAppState extends ConsumerState<CasaPazzaApp>
     ref.watch(syncServiceProvider);
     if (!kIsWeb) ref.watch(homeWidgetSyncProvider);
     ref.watch(pushRegistrationProvider);
+    ref.watch(reminderOffsetSyncProvider);
 
     final themeChoice = ref.watch(themeChoiceProvider);
 

@@ -4,7 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('schema 1 → 3: private lists, priorities', () async {
+  test('schema 1 → 4: private lists, priorities, completion log', () async {
     // The relevant tables as created by schema version 1.
     final executor = NativeDatabase.memory(
       setup: (raw) {
@@ -61,5 +61,8 @@ void main() {
 
     // Schema 3: existing tasks get the default priority D.
     expect((await db.select(db.tasks).getSingle()).priority, 'D');
+
+    // Schema 4: the completion log exists and is empty.
+    expect(await db.select(db.completions).get(), isEmpty);
   });
 }

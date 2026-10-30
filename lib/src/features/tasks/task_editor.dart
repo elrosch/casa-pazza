@@ -103,9 +103,25 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
       title: 'Aufgabe löschen?',
       message: '„${widget.task!.title}“ wird für alle gelöscht.',
     );
-    if (!ok) return;
-    await ref.read(tasksRepositoryProvider).deleteTask(widget.task!.id);
+    if (!ok || !mounted) return;
+    final repo = ref.read(tasksRepositoryProvider);
+    final before = widget.task!;
+    // The sheet closes; the undo hint shows on the screen below it.
+    final messenger = ScaffoldMessenger.of(context);
+    await repo.deleteTask(before.id);
     if (mounted) Navigator.of(context).pop();
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('„${before.title}" gelöscht'),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Rückgängig',
+            onPressed: () => repo.restoreTask(before),
+          ),
+        ),
+      );
   }
 
   bool _isInPrivateList() =>

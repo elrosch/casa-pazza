@@ -3354,6 +3354,601 @@ class SyncCursorsCompanion extends UpdateCompanion<SyncCursor> {
   }
 }
 
+class $CompletionsTable extends Completions
+    with TableInfo<$CompletionsTable, CompletionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CompletionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _householdMeta = const VerificationMeta(
+    'household',
+  );
+  @override
+  late final GeneratedColumn<String> household = GeneratedColumn<String>(
+    'household',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _updatedMeta = const VerificationMeta(
+    'updated',
+  );
+  @override
+  late final GeneratedColumn<String> updated = GeneratedColumn<String>(
+    'updated',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _taskMeta = const VerificationMeta('task');
+  @override
+  late final GeneratedColumn<String> task = GeneratedColumn<String>(
+    'task',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _listMeta = const VerificationMeta('list');
+  @override
+  late final GeneratedColumn<String> list = GeneratedColumn<String>(
+    'list',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userMeta = const VerificationMeta('user');
+  @override
+  late final GeneratedColumn<String> user = GeneratedColumn<String>(
+    'user',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _doneAtMeta = const VerificationMeta('doneAt');
+  @override
+  late final GeneratedColumn<DateTime> doneAt = GeneratedColumn<DateTime>(
+    'done_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    household,
+    deleted,
+    updated,
+    dirty,
+    task,
+    list,
+    title,
+    user,
+    doneAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'completions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CompletionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('household')) {
+      context.handle(
+        _householdMeta,
+        household.isAcceptableOrUnknown(data['household']!, _householdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_householdMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('updated')) {
+      context.handle(
+        _updatedMeta,
+        updated.isAcceptableOrUnknown(data['updated']!, _updatedMeta),
+      );
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('task')) {
+      context.handle(
+        _taskMeta,
+        task.isAcceptableOrUnknown(data['task']!, _taskMeta),
+      );
+    }
+    if (data.containsKey('list')) {
+      context.handle(
+        _listMeta,
+        list.isAcceptableOrUnknown(data['list']!, _listMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_listMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('user')) {
+      context.handle(
+        _userMeta,
+        user.isAcceptableOrUnknown(data['user']!, _userMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userMeta);
+    }
+    if (data.containsKey('done_at')) {
+      context.handle(
+        _doneAtMeta,
+        doneAt.isAcceptableOrUnknown(data['done_at']!, _doneAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_doneAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CompletionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CompletionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      household: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}household'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      updated: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated'],
+      )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      task: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task'],
+      ),
+      list: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}list'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      user: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user'],
+      )!,
+      doneAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}done_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CompletionsTable createAlias(String alias) {
+    return $CompletionsTable(attachedDatabase, alias);
+  }
+}
+
+class CompletionRow extends DataClass implements Insertable<CompletionRow> {
+  final String id;
+  final String household;
+  final bool deleted;
+  final String updated;
+  final bool dirty;
+  final String? task;
+  final String list;
+  final String title;
+  final String user;
+  final DateTime doneAt;
+  const CompletionRow({
+    required this.id,
+    required this.household,
+    required this.deleted,
+    required this.updated,
+    required this.dirty,
+    this.task,
+    required this.list,
+    required this.title,
+    required this.user,
+    required this.doneAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['household'] = Variable<String>(household);
+    map['deleted'] = Variable<bool>(deleted);
+    map['updated'] = Variable<String>(updated);
+    map['dirty'] = Variable<bool>(dirty);
+    if (!nullToAbsent || task != null) {
+      map['task'] = Variable<String>(task);
+    }
+    map['list'] = Variable<String>(list);
+    map['title'] = Variable<String>(title);
+    map['user'] = Variable<String>(user);
+    map['done_at'] = Variable<DateTime>(doneAt);
+    return map;
+  }
+
+  CompletionsCompanion toCompanion(bool nullToAbsent) {
+    return CompletionsCompanion(
+      id: Value(id),
+      household: Value(household),
+      deleted: Value(deleted),
+      updated: Value(updated),
+      dirty: Value(dirty),
+      task: task == null && nullToAbsent ? const Value.absent() : Value(task),
+      list: Value(list),
+      title: Value(title),
+      user: Value(user),
+      doneAt: Value(doneAt),
+    );
+  }
+
+  factory CompletionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CompletionRow(
+      id: serializer.fromJson<String>(json['id']),
+      household: serializer.fromJson<String>(json['household']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      updated: serializer.fromJson<String>(json['updated']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      task: serializer.fromJson<String?>(json['task']),
+      list: serializer.fromJson<String>(json['list']),
+      title: serializer.fromJson<String>(json['title']),
+      user: serializer.fromJson<String>(json['user']),
+      doneAt: serializer.fromJson<DateTime>(json['doneAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'household': serializer.toJson<String>(household),
+      'deleted': serializer.toJson<bool>(deleted),
+      'updated': serializer.toJson<String>(updated),
+      'dirty': serializer.toJson<bool>(dirty),
+      'task': serializer.toJson<String?>(task),
+      'list': serializer.toJson<String>(list),
+      'title': serializer.toJson<String>(title),
+      'user': serializer.toJson<String>(user),
+      'doneAt': serializer.toJson<DateTime>(doneAt),
+    };
+  }
+
+  CompletionRow copyWith({
+    String? id,
+    String? household,
+    bool? deleted,
+    String? updated,
+    bool? dirty,
+    Value<String?> task = const Value.absent(),
+    String? list,
+    String? title,
+    String? user,
+    DateTime? doneAt,
+  }) => CompletionRow(
+    id: id ?? this.id,
+    household: household ?? this.household,
+    deleted: deleted ?? this.deleted,
+    updated: updated ?? this.updated,
+    dirty: dirty ?? this.dirty,
+    task: task.present ? task.value : this.task,
+    list: list ?? this.list,
+    title: title ?? this.title,
+    user: user ?? this.user,
+    doneAt: doneAt ?? this.doneAt,
+  );
+  CompletionRow copyWithCompanion(CompletionsCompanion data) {
+    return CompletionRow(
+      id: data.id.present ? data.id.value : this.id,
+      household: data.household.present ? data.household.value : this.household,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      updated: data.updated.present ? data.updated.value : this.updated,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      task: data.task.present ? data.task.value : this.task,
+      list: data.list.present ? data.list.value : this.list,
+      title: data.title.present ? data.title.value : this.title,
+      user: data.user.present ? data.user.value : this.user,
+      doneAt: data.doneAt.present ? data.doneAt.value : this.doneAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompletionRow(')
+          ..write('id: $id, ')
+          ..write('household: $household, ')
+          ..write('deleted: $deleted, ')
+          ..write('updated: $updated, ')
+          ..write('dirty: $dirty, ')
+          ..write('task: $task, ')
+          ..write('list: $list, ')
+          ..write('title: $title, ')
+          ..write('user: $user, ')
+          ..write('doneAt: $doneAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    household,
+    deleted,
+    updated,
+    dirty,
+    task,
+    list,
+    title,
+    user,
+    doneAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CompletionRow &&
+          other.id == this.id &&
+          other.household == this.household &&
+          other.deleted == this.deleted &&
+          other.updated == this.updated &&
+          other.dirty == this.dirty &&
+          other.task == this.task &&
+          other.list == this.list &&
+          other.title == this.title &&
+          other.user == this.user &&
+          other.doneAt == this.doneAt);
+}
+
+class CompletionsCompanion extends UpdateCompanion<CompletionRow> {
+  final Value<String> id;
+  final Value<String> household;
+  final Value<bool> deleted;
+  final Value<String> updated;
+  final Value<bool> dirty;
+  final Value<String?> task;
+  final Value<String> list;
+  final Value<String> title;
+  final Value<String> user;
+  final Value<DateTime> doneAt;
+  final Value<int> rowid;
+  const CompletionsCompanion({
+    this.id = const Value.absent(),
+    this.household = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.updated = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.task = const Value.absent(),
+    this.list = const Value.absent(),
+    this.title = const Value.absent(),
+    this.user = const Value.absent(),
+    this.doneAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CompletionsCompanion.insert({
+    required String id,
+    required String household,
+    this.deleted = const Value.absent(),
+    this.updated = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.task = const Value.absent(),
+    required String list,
+    required String title,
+    required String user,
+    required DateTime doneAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       household = Value(household),
+       list = Value(list),
+       title = Value(title),
+       user = Value(user),
+       doneAt = Value(doneAt);
+  static Insertable<CompletionRow> custom({
+    Expression<String>? id,
+    Expression<String>? household,
+    Expression<bool>? deleted,
+    Expression<String>? updated,
+    Expression<bool>? dirty,
+    Expression<String>? task,
+    Expression<String>? list,
+    Expression<String>? title,
+    Expression<String>? user,
+    Expression<DateTime>? doneAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (household != null) 'household': household,
+      if (deleted != null) 'deleted': deleted,
+      if (updated != null) 'updated': updated,
+      if (dirty != null) 'dirty': dirty,
+      if (task != null) 'task': task,
+      if (list != null) 'list': list,
+      if (title != null) 'title': title,
+      if (user != null) 'user': user,
+      if (doneAt != null) 'done_at': doneAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CompletionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? household,
+    Value<bool>? deleted,
+    Value<String>? updated,
+    Value<bool>? dirty,
+    Value<String?>? task,
+    Value<String>? list,
+    Value<String>? title,
+    Value<String>? user,
+    Value<DateTime>? doneAt,
+    Value<int>? rowid,
+  }) {
+    return CompletionsCompanion(
+      id: id ?? this.id,
+      household: household ?? this.household,
+      deleted: deleted ?? this.deleted,
+      updated: updated ?? this.updated,
+      dirty: dirty ?? this.dirty,
+      task: task ?? this.task,
+      list: list ?? this.list,
+      title: title ?? this.title,
+      user: user ?? this.user,
+      doneAt: doneAt ?? this.doneAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (household.present) {
+      map['household'] = Variable<String>(household.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (updated.present) {
+      map['updated'] = Variable<String>(updated.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (task.present) {
+      map['task'] = Variable<String>(task.value);
+    }
+    if (list.present) {
+      map['list'] = Variable<String>(list.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (user.present) {
+      map['user'] = Variable<String>(user.value);
+    }
+    if (doneAt.present) {
+      map['done_at'] = Variable<DateTime>(doneAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompletionsCompanion(')
+          ..write('id: $id, ')
+          ..write('household: $household, ')
+          ..write('deleted: $deleted, ')
+          ..write('updated: $updated, ')
+          ..write('dirty: $dirty, ')
+          ..write('task: $task, ')
+          ..write('list: $list, ')
+          ..write('title: $title, ')
+          ..write('user: $user, ')
+          ..write('doneAt: $doneAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3364,6 +3959,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ShoppingListsTable shoppingLists = $ShoppingListsTable(this);
   late final $ShoppingItemsTable shoppingItems = $ShoppingItemsTable(this);
   late final $SyncCursorsTable syncCursors = $SyncCursorsTable(this);
+  late final $CompletionsTable completions = $CompletionsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3376,6 +3972,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     shoppingLists,
     shoppingItems,
     syncCursors,
+    completions,
   ];
 }
 
@@ -5116,6 +5713,301 @@ typedef $$SyncCursorsTableProcessedTableManager =
       SyncCursor,
       PrefetchHooks Function()
     >;
+typedef $$CompletionsTableCreateCompanionBuilder =
+    CompletionsCompanion Function({
+      required String id,
+      required String household,
+      Value<bool> deleted,
+      Value<String> updated,
+      Value<bool> dirty,
+      Value<String?> task,
+      required String list,
+      required String title,
+      required String user,
+      required DateTime doneAt,
+      Value<int> rowid,
+    });
+typedef $$CompletionsTableUpdateCompanionBuilder =
+    CompletionsCompanion Function({
+      Value<String> id,
+      Value<String> household,
+      Value<bool> deleted,
+      Value<String> updated,
+      Value<bool> dirty,
+      Value<String?> task,
+      Value<String> list,
+      Value<String> title,
+      Value<String> user,
+      Value<DateTime> doneAt,
+      Value<int> rowid,
+    });
+
+class $$CompletionsTableFilterComposer
+    extends Composer<_$AppDatabase, $CompletionsTable> {
+  $$CompletionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get household => $composableBuilder(
+    column: $table.household,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updated => $composableBuilder(
+    column: $table.updated,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get task => $composableBuilder(
+    column: $table.task,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get list => $composableBuilder(
+    column: $table.list,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get user => $composableBuilder(
+    column: $table.user,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get doneAt => $composableBuilder(
+    column: $table.doneAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CompletionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CompletionsTable> {
+  $$CompletionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get household => $composableBuilder(
+    column: $table.household,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updated => $composableBuilder(
+    column: $table.updated,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get task => $composableBuilder(
+    column: $table.task,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get list => $composableBuilder(
+    column: $table.list,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get user => $composableBuilder(
+    column: $table.user,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get doneAt => $composableBuilder(
+    column: $table.doneAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CompletionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CompletionsTable> {
+  $$CompletionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get household =>
+      $composableBuilder(column: $table.household, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get updated =>
+      $composableBuilder(column: $table.updated, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<String> get task =>
+      $composableBuilder(column: $table.task, builder: (column) => column);
+
+  GeneratedColumn<String> get list =>
+      $composableBuilder(column: $table.list, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get user =>
+      $composableBuilder(column: $table.user, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get doneAt =>
+      $composableBuilder(column: $table.doneAt, builder: (column) => column);
+}
+
+class $$CompletionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CompletionsTable,
+          CompletionRow,
+          $$CompletionsTableFilterComposer,
+          $$CompletionsTableOrderingComposer,
+          $$CompletionsTableAnnotationComposer,
+          $$CompletionsTableCreateCompanionBuilder,
+          $$CompletionsTableUpdateCompanionBuilder,
+          (
+            CompletionRow,
+            BaseReferences<_$AppDatabase, $CompletionsTable, CompletionRow>,
+          ),
+          CompletionRow,
+          PrefetchHooks Function()
+        > {
+  $$CompletionsTableTableManager(_$AppDatabase db, $CompletionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CompletionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CompletionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CompletionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> household = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> updated = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<String?> task = const Value.absent(),
+                Value<String> list = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> user = const Value.absent(),
+                Value<DateTime> doneAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CompletionsCompanion(
+                id: id,
+                household: household,
+                deleted: deleted,
+                updated: updated,
+                dirty: dirty,
+                task: task,
+                list: list,
+                title: title,
+                user: user,
+                doneAt: doneAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String household,
+                Value<bool> deleted = const Value.absent(),
+                Value<String> updated = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<String?> task = const Value.absent(),
+                required String list,
+                required String title,
+                required String user,
+                required DateTime doneAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CompletionsCompanion.insert(
+                id: id,
+                household: household,
+                deleted: deleted,
+                updated: updated,
+                dirty: dirty,
+                task: task,
+                list: list,
+                title: title,
+                user: user,
+                doneAt: doneAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CompletionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CompletionsTable,
+      CompletionRow,
+      $$CompletionsTableFilterComposer,
+      $$CompletionsTableOrderingComposer,
+      $$CompletionsTableAnnotationComposer,
+      $$CompletionsTableCreateCompanionBuilder,
+      $$CompletionsTableUpdateCompanionBuilder,
+      (
+        CompletionRow,
+        BaseReferences<_$AppDatabase, $CompletionsTable, CompletionRow>,
+      ),
+      CompletionRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5134,4 +6026,6 @@ class $AppDatabaseManager {
       $$ShoppingItemsTableTableManager(_db, _db.shoppingItems);
   $$SyncCursorsTableTableManager get syncCursors =>
       $$SyncCursorsTableTableManager(_db, _db.syncCursors);
+  $$CompletionsTableTableManager get completions =>
+      $$CompletionsTableTableManager(_db, _db.completions);
 }
