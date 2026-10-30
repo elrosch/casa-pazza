@@ -110,8 +110,10 @@ final tasksOfListProvider = StreamProvider.family<List<TaskRow>, String>((
       .watch();
 });
 
+/// Open before done; then priority A–D, due date (undated last) and title.
 final _taskOrder = <OrderClauseGenerator<$TasksTable>>[
   (t) => OrderingTerm.asc(t.done),
+  (t) => OrderingTerm.asc(t.priority),
   (t) => OrderingTerm(expression: t.due, nulls: NullsOrder.last),
   (t) => OrderingTerm.asc(t.title),
 ];
@@ -198,8 +200,10 @@ class TasksRepository extends _Repository {
     DateTime? due,
     RepeatUnit? repeatUnit,
     int repeatEvery = 1,
+    String? priority,
   }) async {
     final fields = TasksCompanion(
+      // Keeps the stored priority (or the default D) when not given.
       list: Value(listId),
       title: Value(title.trim()),
       notes: Value(notes.trim()),
@@ -207,6 +211,7 @@ class TasksRepository extends _Repository {
       due: Value(due),
       repeatUnit: Value(repeatUnit?.name),
       repeatEvery: Value(repeatUnit == null ? 0 : repeatEvery),
+      priority: priority == null ? const Value.absent() : Value(priority),
       dirty: const Value(true),
     );
     if (id == null) {
@@ -283,13 +288,27 @@ final shoppingItemsProvider =
     StreamProvider.family<List<ShoppingItemRow>, String>((ref, listId) {
       final db = ref.watch(databaseProvider);
       return (db.select(db.shoppingItems)
-            ..where((i) => i.list.equals(listId) & i.deleted.not())
-            ..orderBy([
-              (i) => OrderingTerm.asc(i.checked),
-              (i) => OrderingTerm.desc(i.sort),
-            ]))
-          .watch();
+            ..where((i) => i.list.equals(listId) & i.deleted.not()))
+          .watch()
+          .map((items) => items..sort(compareShoppingItems));
     });
+
+/// Open items first, then checked ones; each group alphabetically, with
+/// umlauts sorted like their base letters (Äpfel next to Apfelsaft).
+int compareShoppingItems(ShoppingItemRow a, ShoppingItemRow b) {
+  if (a.checked != b.checked) return a.checked ? 1 : -1;
+  final byName = germanSortKey(a.name).compareTo(germanSortKey(b.name));
+  return byName != 0 ? byName : a.id.compareTo(b.id);
+}
+
+/// Case-insensitive sort key that treats ä/ö/ü/ß like a/o/u/ss.
+String germanSortKey(String s) => s
+    .trim()
+    .toLowerCase()
+    .replaceAll('ä', 'a')
+    .replaceAll('ö', 'o')
+    .replaceAll('ü', 'u')
+    .replaceAll('ß', 'ss');
 
 class ShoppingRepository extends _Repository {
   ShoppingRepository(super.ref);

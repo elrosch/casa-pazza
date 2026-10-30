@@ -63,6 +63,9 @@ class Tasks extends Table with SyncColumns {
   DateTimeColumn get doneAt => dateTime().nullable()();
   TextColumn get doneBy => text().nullable()();
   TextColumn get createdBy => text().nullable()();
+
+  /// A (highest) to D (default).
+  TextColumn get priority => text().withDefault(const Constant('D'))();
 }
 
 @DataClassName('ShoppingListRow')
@@ -118,7 +121,7 @@ class AppDatabase extends _$AppDatabase {
       );
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -130,6 +133,9 @@ class AppDatabase extends _$AppDatabase {
         await (delete(
           syncCursors,
         )..where((c) => c.collection.equals('task_lists'))).go();
+      }
+      if (from < 3) {
+        await m.addColumn(tasks, tasks.priority);
       }
     },
   );

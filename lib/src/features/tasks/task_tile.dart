@@ -5,6 +5,7 @@ import '../../common/widgets.dart';
 import '../../data/db/database.dart';
 import '../../data/recurrence.dart';
 import '../../data/repositories.dart';
+import '../../theme/app_theme.dart';
 import 'task_editor.dart';
 
 class TaskTile extends ConsumerWidget {
@@ -35,25 +36,35 @@ class TaskTile extends ConsumerWidget {
       if (task.assignee != null) TextSpan(text: members.nameOf(task.assignee)),
     ];
 
-    return ListTile(
-      leading: Checkbox(
-        value: task.done,
-        onChanged: (_) => _toggle(context, ref),
+    final priorityColor = theme.priorityColors.of(task.priority);
+
+    // The priority color marks the row: a bar on the left and the checkbox.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: priorityColor, width: 4)),
       ),
-      title: Text(
-        task.title,
-        style: task.done
-            ? TextStyle(
-                decoration: TextDecoration.lineThrough,
-                color: theme.colorScheme.outline,
-              )
-            : null,
+      child: ListTile(
+        leading: Checkbox(
+          value: task.done,
+          side: BorderSide(color: priorityColor, width: 2),
+          activeColor: priorityColor,
+          onChanged: (_) => _toggle(context, ref),
+        ),
+        title: Text(
+          task.title,
+          style: task.done
+              ? TextStyle(
+                  decoration: TextDecoration.lineThrough,
+                  color: theme.colorScheme.outline,
+                )
+              : null,
+        ),
+        subtitle: details.isEmpty
+            ? null
+            : Text.rich(TextSpan(children: _join(details))),
+        trailing: unit != null ? const Icon(Icons.repeat, size: 18) : null,
+        onTap: () => showTaskEditor(context, listId: task.list, task: task),
       ),
-      subtitle: details.isEmpty
-          ? null
-          : Text.rich(TextSpan(children: _join(details))),
-      trailing: unit != null ? const Icon(Icons.repeat, size: 18) : null,
-      onTap: () => showTaskEditor(context, listId: task.list, task: task),
     );
   }
 

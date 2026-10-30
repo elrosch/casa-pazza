@@ -1285,6 +1285,18 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _priorityMeta = const VerificationMeta(
+    'priority',
+  );
+  @override
+  late final GeneratedColumn<String> priority = GeneratedColumn<String>(
+    'priority',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('D'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1303,6 +1315,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     doneAt,
     doneBy,
     createdBy,
+    priority,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1420,6 +1433,12 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
       );
     }
+    if (data.containsKey('priority')) {
+      context.handle(
+        _priorityMeta,
+        priority.isAcceptableOrUnknown(data['priority']!, _priorityMeta),
+      );
+    }
     return context;
   }
 
@@ -1493,6 +1512,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.string,
         data['${effectivePrefix}created_by'],
       ),
+      priority: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}priority'],
+      )!,
     );
   }
 
@@ -1519,6 +1542,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   final DateTime? doneAt;
   final String? doneBy;
   final String? createdBy;
+
+  /// A (highest) to D (default).
+  final String priority;
   const TaskRow({
     required this.id,
     required this.household,
@@ -1536,6 +1562,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     this.doneAt,
     this.doneBy,
     this.createdBy,
+    required this.priority,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1568,6 +1595,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     if (!nullToAbsent || createdBy != null) {
       map['created_by'] = Variable<String>(createdBy);
     }
+    map['priority'] = Variable<String>(priority);
     return map;
   }
 
@@ -1599,6 +1627,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       createdBy: createdBy == null && nullToAbsent
           ? const Value.absent()
           : Value(createdBy),
+      priority: Value(priority),
     );
   }
 
@@ -1624,6 +1653,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       doneAt: serializer.fromJson<DateTime?>(json['doneAt']),
       doneBy: serializer.fromJson<String?>(json['doneBy']),
       createdBy: serializer.fromJson<String?>(json['createdBy']),
+      priority: serializer.fromJson<String>(json['priority']),
     );
   }
   @override
@@ -1646,6 +1676,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       'doneAt': serializer.toJson<DateTime?>(doneAt),
       'doneBy': serializer.toJson<String?>(doneBy),
       'createdBy': serializer.toJson<String?>(createdBy),
+      'priority': serializer.toJson<String>(priority),
     };
   }
 
@@ -1666,6 +1697,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     Value<DateTime?> doneAt = const Value.absent(),
     Value<String?> doneBy = const Value.absent(),
     Value<String?> createdBy = const Value.absent(),
+    String? priority,
   }) => TaskRow(
     id: id ?? this.id,
     household: household ?? this.household,
@@ -1683,6 +1715,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     doneAt: doneAt.present ? doneAt.value : this.doneAt,
     doneBy: doneBy.present ? doneBy.value : this.doneBy,
     createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    priority: priority ?? this.priority,
   );
   TaskRow copyWithCompanion(TasksCompanion data) {
     return TaskRow(
@@ -1706,6 +1739,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       doneAt: data.doneAt.present ? data.doneAt.value : this.doneAt,
       doneBy: data.doneBy.present ? data.doneBy.value : this.doneBy,
       createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      priority: data.priority.present ? data.priority.value : this.priority,
     );
   }
 
@@ -1727,7 +1761,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('done: $done, ')
           ..write('doneAt: $doneAt, ')
           ..write('doneBy: $doneBy, ')
-          ..write('createdBy: $createdBy')
+          ..write('createdBy: $createdBy, ')
+          ..write('priority: $priority')
           ..write(')'))
         .toString();
   }
@@ -1750,6 +1785,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     doneAt,
     doneBy,
     createdBy,
+    priority,
   );
   @override
   bool operator ==(Object other) =>
@@ -1770,7 +1806,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.done == this.done &&
           other.doneAt == this.doneAt &&
           other.doneBy == this.doneBy &&
-          other.createdBy == this.createdBy);
+          other.createdBy == this.createdBy &&
+          other.priority == this.priority);
 }
 
 class TasksCompanion extends UpdateCompanion<TaskRow> {
@@ -1790,6 +1827,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<DateTime?> doneAt;
   final Value<String?> doneBy;
   final Value<String?> createdBy;
+  final Value<String> priority;
   final Value<int> rowid;
   const TasksCompanion({
     this.id = const Value.absent(),
@@ -1808,6 +1846,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.doneAt = const Value.absent(),
     this.doneBy = const Value.absent(),
     this.createdBy = const Value.absent(),
+    this.priority = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TasksCompanion.insert({
@@ -1827,6 +1866,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.doneAt = const Value.absent(),
     this.doneBy = const Value.absent(),
     this.createdBy = const Value.absent(),
+    this.priority = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        household = Value(household),
@@ -1849,6 +1889,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<DateTime>? doneAt,
     Expression<String>? doneBy,
     Expression<String>? createdBy,
+    Expression<String>? priority,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1868,6 +1909,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       if (doneAt != null) 'done_at': doneAt,
       if (doneBy != null) 'done_by': doneBy,
       if (createdBy != null) 'created_by': createdBy,
+      if (priority != null) 'priority': priority,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1889,6 +1931,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<DateTime?>? doneAt,
     Value<String?>? doneBy,
     Value<String?>? createdBy,
+    Value<String>? priority,
     Value<int>? rowid,
   }) {
     return TasksCompanion(
@@ -1908,6 +1951,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       doneAt: doneAt ?? this.doneAt,
       doneBy: doneBy ?? this.doneBy,
       createdBy: createdBy ?? this.createdBy,
+      priority: priority ?? this.priority,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1963,6 +2007,9 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     if (createdBy.present) {
       map['created_by'] = Variable<String>(createdBy.value);
     }
+    if (priority.present) {
+      map['priority'] = Variable<String>(priority.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1988,6 +2035,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('doneAt: $doneAt, ')
           ..write('doneBy: $doneBy, ')
           ..write('createdBy: $createdBy, ')
+          ..write('priority: $priority, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3964,6 +4012,7 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<DateTime?> doneAt,
       Value<String?> doneBy,
       Value<String?> createdBy,
+      Value<String> priority,
       Value<int> rowid,
     });
 typedef $$TasksTableUpdateCompanionBuilder =
@@ -3984,6 +4033,7 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<DateTime?> doneAt,
       Value<String?> doneBy,
       Value<String?> createdBy,
+      Value<String> priority,
       Value<int> rowid,
     });
 
@@ -4072,6 +4122,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<String> get createdBy => $composableBuilder(
     column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get priority => $composableBuilder(
+    column: $table.priority,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4164,6 +4219,11 @@ class $$TasksTableOrderingComposer
     column: $table.createdBy,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TasksTableAnnotationComposer
@@ -4226,6 +4286,9 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<String> get createdBy =>
       $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get priority =>
+      $composableBuilder(column: $table.priority, builder: (column) => column);
 }
 
 class $$TasksTableTableManager
@@ -4272,6 +4335,7 @@ class $$TasksTableTableManager
                 Value<DateTime?> doneAt = const Value.absent(),
                 Value<String?> doneBy = const Value.absent(),
                 Value<String?> createdBy = const Value.absent(),
+                Value<String> priority = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TasksCompanion(
                 id: id,
@@ -4290,6 +4354,7 @@ class $$TasksTableTableManager
                 doneAt: doneAt,
                 doneBy: doneBy,
                 createdBy: createdBy,
+                priority: priority,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4310,6 +4375,7 @@ class $$TasksTableTableManager
                 Value<DateTime?> doneAt = const Value.absent(),
                 Value<String?> doneBy = const Value.absent(),
                 Value<String?> createdBy = const Value.absent(),
+                Value<String> priority = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TasksCompanion.insert(
                 id: id,
@@ -4328,6 +4394,7 @@ class $$TasksTableTableManager
                 doneAt: doneAt,
                 doneBy: doneBy,
                 createdBy: createdBy,
+                priority: priority,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

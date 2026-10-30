@@ -8,6 +8,7 @@ import '../../common/widgets.dart';
 import '../../data/auth.dart';
 import '../../data/repositories.dart';
 import '../../data/sync/sync_service.dart';
+import '../../theme/app_theme.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -82,6 +83,13 @@ class SettingsScreen extends ConsumerWidget {
             }),
             onTap: () => ref.read(syncServiceProvider)?.syncNow(),
           ),
+          _Section('Darstellung'),
+          ListTile(
+            leading: const Icon(Icons.palette_outlined),
+            title: const Text('Farbschema'),
+            subtitle: Text(ref.watch(themeChoiceProvider).label),
+            onTap: () => _chooseTheme(context, ref),
+          ),
           _Section('Konto'),
           ListTile(
             leading: const Icon(Icons.account_circle_outlined),
@@ -102,6 +110,36 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _chooseTheme(BuildContext context, WidgetRef ref) async {
+    final current = ref.read(themeChoiceProvider);
+    final choice = await showDialog<AppThemeChoice>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Farbschema'),
+        children: [
+          RadioGroup<AppThemeChoice>(
+            groupValue: current,
+            onChanged: (c) => Navigator.of(context).pop(c),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final c in AppThemeChoice.values)
+                  RadioListTile<AppThemeChoice>(
+                    value: c,
+                    title: Text(c.label),
+                    subtitle: c == AppThemeChoice.system
+                        ? const Text('Hell oder dunkel wie am Gerät')
+                        : null,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (choice != null) ref.read(themeChoiceProvider.notifier).set(choice);
   }
 
   Future<void> _regenerateCode(BuildContext context, WidgetRef ref) async {

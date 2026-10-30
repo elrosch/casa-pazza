@@ -36,7 +36,11 @@ String fieldText(WidgetTester tester) =>
 void main() {
   late AppDatabase db;
 
-  Future<void> pumpSheet(WidgetTester tester, String sentence) async {
+  Future<void> pumpSheet(
+    WidgetTester tester,
+    String sentence, {
+    bool preferShopping = false,
+  }) async {
     await initializeDateFormatting('de');
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
@@ -70,7 +74,9 @@ void main() {
           connectivityProvider.overrideWithValue(const Stream.empty()),
           speechRecognizerProvider.overrideWithValue(FakeRecognizer(sentence)),
         ],
-        child: const MaterialApp(home: Scaffold(body: VoiceInputSheet())),
+        child: MaterialApp(
+          home: Scaffold(body: VoiceInputSheet(preferShopping: preferShopping)),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -124,6 +130,27 @@ void main() {
     await tester.pumpAndSettle();
     expect((await db.select(db.shoppingItems).getSingle()).name, 'Batterien');
     expect(await db.select(db.tasks).get(), isEmpty);
+    await finish(tester);
+  });
+
+  testWidgets('shopping widget: a plain item goes to the shopping list', (
+    tester,
+  ) async {
+    await pumpSheet(tester, 'Milch', preferShopping: true);
+    expect(fieldText(tester), 'Milch');
+    await tester.tap(find.text('Hinzufügen'));
+    await tester.pumpAndSettle();
+    expect((await db.select(db.shoppingItems).getSingle()).name, 'Milch');
+    expect(await db.select(db.tasks).get(), isEmpty);
+    await finish(tester);
+  });
+
+  testWidgets('shopping widget: a clear task stays a task', (tester) async {
+    await pumpSheet(tester, 'Wäsche waschen für Elias', preferShopping: true);
+    await tester.tap(find.text('Hinzufügen'));
+    await tester.pumpAndSettle();
+    expect((await db.select(db.tasks).getSingle()).assignee, 'elias');
+    expect(await db.select(db.shoppingItems).get(), isEmpty);
     await finish(tester);
   });
 }

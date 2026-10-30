@@ -24,6 +24,7 @@ TaskRow task({DateTime? due, String? repeatUnit}) => TaskRow(
   deleted: false,
   updated: '',
   dirty: false,
+  priority: 'D',
 );
 
 Finder chip(String label) => find.widgetWithText(FilterChip, label);
@@ -154,6 +155,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    // Open tasks are ordered by priority first (all D here), then due date.
+    expect(
+      tester.getTopLeft(find.text('Überfällig')).dy,
+      lessThan(tester.getTopLeft(find.text('Heute fällig')).dy),
+    );
 
     // Chips start at the left edge (16 px padding), not centered.
     expect(tester.getTopLeft(find.text('Bis heute')).dx, lessThan(60));

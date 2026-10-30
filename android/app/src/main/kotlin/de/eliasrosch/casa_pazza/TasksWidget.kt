@@ -3,6 +3,7 @@ package de.eliasrosch.casa_pazza
 import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -23,6 +24,7 @@ import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.color.ColorProvider
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -71,6 +73,7 @@ private data class WidgetTask(
     val due: LocalDate?,
     val assignee: String,
     val repeats: Boolean,
+    val priority: String,
 )
 
 private data class WidgetData(
@@ -131,9 +134,18 @@ private fun parse(json: String?): WidgetData {
                 due = t.optString("due").takeIf { it.isNotEmpty() }?.let(LocalDate::parse),
                 assignee = t.optString("assignee"),
                 repeats = t.optBoolean("repeats"),
+                priority = t.optString("priority").ifEmpty { "D" },
             )
         },
     )
+}
+
+/** Priority A–D: red, yellow, green, aqua (Gruvbox colors, light/dark). */
+private fun priorityColor(priority: String): androidx.glance.unit.ColorProvider = when (priority) {
+    "A" -> ColorProvider(day = Color(0xFFCC241D), night = Color(0xFFFB4934))
+    "B" -> ColorProvider(day = Color(0xFFD79921), night = Color(0xFFFABD2F))
+    "C" -> ColorProvider(day = Color(0xFF98971A), night = Color(0xFFB8BB26))
+    else -> ColorProvider(day = Color(0xFF689D6A), night = Color(0xFF8EC07C))
 }
 
 /** Same wording as the app: Heute, Morgen, Gestern or e.g. "Fr., 24.10.". */
@@ -161,6 +173,7 @@ class TasksWidget : GlanceAppWidget() {
     private fun Content(context: Context, data: WidgetData) {
         val openApp = actionOpenApp(context, "casapazza://tasks")
         val addTask = actionOpenApp(context, "casapazza://add-task")
+        val voice = actionOpenApp(context, "casapazza://voice")
 
         Column(
             modifier = GlanceModifier
@@ -185,6 +198,15 @@ class TasksWidget : GlanceAppWidget() {
                     modifier = GlanceModifier.defaultWeight().clickable(openApp),
                 )
                 if (data.loggedIn) {
+                    CircleIconButton(
+                        imageProvider = ImageProvider(R.drawable.ic_widget_mic),
+                        contentDescription = "Per Sprache hinzufügen",
+                        onClick = voice,
+                        backgroundColor = GlanceTheme.colors.secondaryContainer,
+                        contentColor = GlanceTheme.colors.onSecondaryContainer,
+                        modifier = GlanceModifier.size(36.dp),
+                    )
+                    Spacer(GlanceModifier.width(6.dp))
                     CircleIconButton(
                         imageProvider = ImageProvider(R.drawable.ic_widget_add),
                         contentDescription = "Aufgabe hinzufügen",
@@ -233,6 +255,13 @@ class TasksWidget : GlanceAppWidget() {
                     modifier = GlanceModifier.fillMaxWidth().padding(vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Box(
+                        modifier = GlanceModifier
+                            .width(4.dp)
+                            .height(32.dp)
+                            .cornerRadius(2.dp)
+                            .background(priorityColor(task.priority)),
+                    ) {}
                     CheckBox(
                         checked = false,
                         onCheckedChange = actionRunCallback<CompleteTaskAction>(

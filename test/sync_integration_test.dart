@@ -132,6 +132,24 @@ void main() {
       expect(benTasks.single.assignee, ben.userId);
       expect(benTasks.single.repeatUnit, 'week');
 
+      // Priority set by Anna reaches Ben; tasks without one are D.
+      expect(benTasks.single.priority, 'D');
+      await anna.tasks.saveTask(
+        id: benTasks.single.id,
+        listId: listId,
+        title: 'Müll rausbringen',
+        assignee: ben.userId,
+        due: DateTime(2026, 10, 1),
+        repeatUnit: RepeatUnit.week,
+        priority: 'A',
+      );
+      await anna.sync();
+      await ben.sync();
+      final prioritized = await (ben.db.select(
+        ben.db.tasks,
+      )..where((t) => t.id.equals(benTasks.single.id))).getSingle();
+      expect(prioritized.priority, 'A');
+
       // Ben completes it: it stays open and moves on by one week.
       final next = await ben.tasks.complete(benTasks.single);
       // Overdue since 1.10. – next due date counts from today.

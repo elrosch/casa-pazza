@@ -79,6 +79,7 @@ final widgetJsonProvider = Provider<String?>((ref) {
               ? 'Ich'
               : members.nameOf(t.assignee),
           'repeats': t.repeatUnit != null,
+          'priority': t.priority,
         },
     ],
   );
@@ -152,6 +153,8 @@ sealed class WidgetRequest {
       uri.queryParameters['id']!,
     ),
     'scan' => const ScanRequest(),
+    'voice' when uri!.queryParameters['list'] == 'shopping' =>
+      const ShoppingVoiceRequest(),
     'voice' => const VoiceRequest(),
     _ => null,
   };
@@ -173,6 +176,14 @@ class EditTaskRequest extends WidgetRequest {
 /// The "Per Sprache hinzufügen" app shortcut: open voice input.
 class VoiceRequest extends WidgetRequest {
   const VoiceRequest();
+}
+
+/// The shopping widget's mic button: voice input for shopping items.
+class ShoppingVoiceRequest extends WidgetRequest {
+  const ShoppingVoiceRequest();
+
+  @override
+  String get route => AppRoutes.shopping;
 }
 
 /// The shopping widget's scan button: open the barcode scanner.

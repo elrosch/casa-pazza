@@ -4,7 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('schema 1 → 2 adds private/owner and re-pulls task lists', () async {
+  test('schema 1 → 3: private lists, priorities', () async {
     // The relevant tables as created by schema version 1.
     final executor = NativeDatabase.memory(
       setup: (raw) {
@@ -15,6 +15,20 @@ void main() {
             dirty INTEGER NOT NULL DEFAULT 0, name TEXT NOT NULL,
             color TEXT NOT NULL DEFAULT '', sort INTEGER NOT NULL DEFAULT 0)
         ''');
+        raw.execute('''
+          CREATE TABLE tasks (
+            id TEXT NOT NULL PRIMARY KEY, household TEXT NOT NULL,
+            deleted INTEGER NOT NULL DEFAULT 0, updated TEXT NOT NULL DEFAULT '',
+            dirty INTEGER NOT NULL DEFAULT 0, list TEXT NOT NULL,
+            title TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '',
+            assignee TEXT NULL, due INTEGER NULL, repeat_unit TEXT NULL,
+            repeat_every INTEGER NOT NULL DEFAULT 0,
+            done INTEGER NOT NULL DEFAULT 0, done_at INTEGER NULL,
+            done_by TEXT NULL, created_by TEXT NULL)
+        ''');
+        raw.execute(
+          "INSERT INTO tasks (id, household, list, title) VALUES ('t1', 'h', 'l1', 'Müll')",
+        );
         raw.execute(
           'CREATE TABLE sync_cursors (collection TEXT NOT NULL PRIMARY KEY, '
           'cursor TEXT NOT NULL)',
@@ -44,5 +58,8 @@ void main() {
       const TaskListsCompanion(isPrivate: Value(true), owner: Value('u1')),
     );
     expect((await db.select(db.taskLists).getSingle()).isPrivate, isTrue);
+
+    // Schema 3: existing tasks get the default priority D.
+    expect((await db.select(db.tasks).getSingle()).priority, 'D');
   });
 }

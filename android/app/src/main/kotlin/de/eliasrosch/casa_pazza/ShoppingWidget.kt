@@ -34,6 +34,7 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
+import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -102,6 +103,7 @@ class ShoppingWidget : GlanceAppWidget() {
     private fun Content(context: Context, data: ShoppingData) {
         val openApp = actionOpenApp(context, "casapazza://shopping")
         val scan = actionOpenApp(context, "casapazza://scan")
+        val voice = actionOpenApp(context, "casapazza://voice?list=shopping")
 
         Column(
             modifier = GlanceModifier
@@ -126,6 +128,15 @@ class ShoppingWidget : GlanceAppWidget() {
                     modifier = GlanceModifier.defaultWeight().clickable(openApp),
                 )
                 if (data.loggedIn) {
+                    CircleIconButton(
+                        imageProvider = ImageProvider(R.drawable.ic_widget_mic),
+                        contentDescription = "Per Sprache hinzufügen",
+                        onClick = voice,
+                        backgroundColor = GlanceTheme.colors.secondaryContainer,
+                        contentColor = GlanceTheme.colors.onSecondaryContainer,
+                        modifier = GlanceModifier.size(36.dp),
+                    )
+                    Spacer(GlanceModifier.width(6.dp))
                     CircleIconButton(
                         imageProvider = ImageProvider(R.drawable.ic_widget_scan),
                         contentDescription = "Barcode scannen",

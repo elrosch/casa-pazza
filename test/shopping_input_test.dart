@@ -1,3 +1,5 @@
+import 'package:casa_pazza/src/data/db/database.dart';
+import 'package:casa_pazza/src/data/repositories.dart';
 import 'package:casa_pazza/src/features/shopping/shopping_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -19,5 +21,37 @@ void main() {
       'Hackfleisch',
       '500 Gramm',
     ));
+  });
+
+  test('shopping items sort open first, then alphabetically', () {
+    ShoppingItemRow item(String id, String name, {bool checked = false}) =>
+        ShoppingItemRow(
+          id: id,
+          household: 'h',
+          list: 'l',
+          name: name,
+          quantity: '',
+          checked: checked,
+          sort: 0,
+          deleted: false,
+          updated: '',
+          dirty: false,
+        );
+    final items = [
+      item('1', 'Zucker'),
+      item('2', 'äpfel'),
+      item('3', 'Milch', checked: true),
+      item('4', 'Apfelsaft'),
+      item('5', 'Brot', checked: true),
+      item('6', 'Öl'),
+    ]..sort(compareShoppingItems);
+    expect(items.map((i) => i.name), [
+      'äpfel',
+      'Apfelsaft',
+      'Öl',
+      'Zucker',
+      'Brot',
+      'Milch',
+    ]);
   });
 }

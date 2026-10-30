@@ -64,12 +64,17 @@ class _ShoppingListView extends ConsumerWidget {
     final repo = ref.read(shoppingRepositoryProvider);
 
     // The scan button on the home screen widget opens the scanner directly.
-    if (ref.watch(widgetRequestProvider) is ScanRequest) {
+    // Scan and mic buttons on the home screen widget open scanner or voice.
+    final request = ref.watch(widgetRequestProvider);
+    if (request is ScanRequest || request is ShoppingVoiceRequest) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final scan = ref
-            .read(widgetRequestProvider.notifier)
-            .consume<ScanRequest>();
-        if (scan != null && context.mounted) _scan(context);
+        final requests = ref.read(widgetRequestProvider.notifier);
+        if (!context.mounted) return;
+        if (requests.consume<ScanRequest>() != null) {
+          _scan(context);
+        } else if (requests.consume<ShoppingVoiceRequest>() != null) {
+          showVoiceInputSheet(context, preferShopping: true);
+        }
       });
     }
 
@@ -109,7 +114,8 @@ class _ShoppingListView extends ConsumerWidget {
                       IconButton(
                         icon: const Icon(Icons.mic_none),
                         tooltip: 'Per Sprache hinzufügen',
-                        onPressed: () => showVoiceInputSheet(context),
+                        onPressed: () =>
+                            showVoiceInputSheet(context, preferShopping: true),
                       ),
                       IconButton(
                         icon: const Icon(Icons.qr_code_scanner),

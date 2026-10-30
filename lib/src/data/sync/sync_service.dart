@@ -154,6 +154,8 @@ class SyncService {
         due: Value(_parseDate(r.get<String>('due', ''))),
         repeatUnit: Value(_nullIfEmpty(r.get<String>('repeat_unit', ''))),
         repeatEvery: Value(r.get<num>('repeat_every', 0).toInt()),
+        // Empty on tasks from before priorities existed.
+        priority: Value(r.get<String>('priority', '').ifEmpty('D')),
         done: Value(r.get<bool>('done', false)),
         doneAt: Value(_parseDate(r.get<String>('done_at', ''))),
         doneBy: Value(_nullIfEmpty(r.get<String>('done_by', ''))),
@@ -171,6 +173,7 @@ class SyncService {
         'due': _formatDate(row.due),
         'repeat_unit': row.repeatUnit ?? '',
         'repeat_every': row.repeatEvery,
+        'priority': row.priority,
         'done': row.done,
         'done_at': _formatDate(row.doneAt),
         'done_by': row.doneBy ?? '',
@@ -541,3 +544,7 @@ DateTime? _parseDate(String value) =>
 
 String _formatDate(DateTime? value) =>
     value == null ? '' : value.toUtc().toIso8601String();
+
+extension on String {
+  String ifEmpty(String fallback) => isEmpty ? fallback : this;
+}

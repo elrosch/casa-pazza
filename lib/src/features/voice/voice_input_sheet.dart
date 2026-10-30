@@ -13,13 +13,19 @@ import 'voice_command.dart';
 /// Listens for a sentence like "Salz auf die Einkaufsliste" or "Neues Todo
 /// für Elias: Wäsche waschen", shows the understood item for a quick check
 /// and adds it to the current task or shopping list.
-Future<void> showVoiceInputSheet(BuildContext context) async {
+///
+/// With [preferShopping] (shopping tab and widget) a plain item like „Milch"
+/// goes to the shopping list instead of becoming a task.
+Future<void> showVoiceInputSheet(
+  BuildContext context, {
+  bool preferShopping = false,
+}) async {
   final added = await showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     useSafeArea: true,
-    builder: (_) => const VoiceInputSheet(),
+    builder: (_) => VoiceInputSheet(preferShopping: preferShopping),
   );
   if (added != null && context.mounted) {
     ScaffoldMessenger.of(context)
@@ -31,7 +37,9 @@ Future<void> showVoiceInputSheet(BuildContext context) async {
 enum _Kind { task, shopping }
 
 class VoiceInputSheet extends ConsumerStatefulWidget {
-  const VoiceInputSheet({super.key});
+  const VoiceInputSheet({super.key, this.preferShopping = false});
+
+  final bool preferShopping;
 
   @override
   ConsumerState<VoiceInputSheet> createState() => _VoiceInputSheetState();
@@ -110,6 +118,12 @@ class _VoiceInputSheetState extends ConsumerState<VoiceInputSheet> {
               .map((i) => [i.quantity, i.name].where((s) => s.isNotEmpty))
               .map((parts) => parts.join(' '))
               .join(', ');
+        // Without a hint at a task (assignee, date), a sentence spoken in
+        // the shopping context is an item to buy.
+        case TaskVoiceCommand(:final title, assignee: null, due: null)
+            when widget.preferShopping:
+          _kind = _Kind.shopping;
+          _text.text = title;
         case TaskVoiceCommand(:final title, :final assignee, :final due):
           _kind = _Kind.task;
           _text.text = title;

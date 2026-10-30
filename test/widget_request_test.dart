@@ -20,6 +20,11 @@ void main() {
     final voice = WidgetRequest.fromUri(Uri.parse('casapazza://voice'));
     expect(voice, isA<VoiceRequest>());
     expect(voice!.route, '/tasks');
+    final shoppingVoice = WidgetRequest.fromUri(
+      Uri.parse('casapazza://voice?list=shopping'),
+    );
+    expect(shoppingVoice, isA<ShoppingVoiceRequest>());
+    expect(shoppingVoice!.route, '/shopping');
     expect(WidgetRequest.fromUri(Uri.parse('casapazza://tasks')), isNull);
     expect(WidgetRequest.fromUri(null), isNull);
   });

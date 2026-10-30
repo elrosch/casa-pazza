@@ -102,12 +102,22 @@ class _CasaPazzaAppState extends ConsumerState<CasaPazzaApp>
     if (!kIsWeb) ref.watch(homeWidgetSyncProvider);
     ref.watch(pushRegistrationProvider);
 
+    final themeChoice = ref.watch(themeChoiceProvider);
+
     return MaterialApp.router(
       title: 'Casa Pazza',
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: _messenger,
-      theme: AppTheme.light,
+      // "System" follows the phone's light/dark setting; Gruvbox is fixed.
+      theme: switch (themeChoice) {
+        AppThemeChoice.gruvboxLight => AppTheme.gruvboxLight,
+        AppThemeChoice.gruvboxDark => AppTheme.gruvboxDark,
+        AppThemeChoice.system => AppTheme.light,
+      },
       darkTheme: AppTheme.dark,
+      themeMode: themeChoice == AppThemeChoice.system
+          ? ThemeMode.system
+          : ThemeMode.light,
       locale: const Locale('de'),
       supportedLocales: const [Locale('de')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,

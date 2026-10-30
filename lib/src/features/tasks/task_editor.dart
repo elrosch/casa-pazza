@@ -6,6 +6,7 @@ import '../../data/auth.dart';
 import '../../data/db/database.dart';
 import '../../data/recurrence.dart';
 import '../../data/repositories.dart';
+import '../../theme/app_theme.dart';
 
 /// Opens the create/edit sheet. Without [task] a new task is added to [listId].
 Future<void> showTaskEditor(
@@ -38,6 +39,7 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
   late String? _assignee = widget.task?.assignee;
   late DateTime? _due = widget.task?.due;
   late RepeatUnit? _repeatUnit = RepeatUnit.fromName(widget.task?.repeatUnit);
+  late String _priority = widget.task?.priority ?? 'D';
   late int _repeatEvery = (widget.task?.repeatEvery ?? 0) < 1
       ? 1
       : widget.task!.repeatEvery;
@@ -90,6 +92,7 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
           due: due,
           repeatUnit: _repeatUnit,
           repeatEvery: _repeatEvery,
+          priority: _priority,
         );
     if (mounted) Navigator.of(context).pop();
   }
@@ -153,6 +156,13 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
               decoration: const InputDecoration(labelText: 'Notizen'),
             ),
             // Private lists are only visible to their owner: no assignment.
+            const SizedBox(height: 20),
+            Text('Priorität', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 8),
+            _PriorityPicker(
+              value: _priority,
+              onChanged: (p) => setState(() => _priority = p),
+            ),
             if (!privateList) ...[
               const SizedBox(height: 20),
               Text('Zuständig', style: theme.textTheme.labelLarge),
@@ -260,6 +270,32 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A–D as a segmented row; each segment shows its priority color.
+class _PriorityPicker extends StatelessWidget {
+  const _PriorityPicker({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).priorityColors;
+    return SegmentedButton<String>(
+      showSelectedIcon: false,
+      segments: [
+        for (final p in const ['A', 'B', 'C', 'D'])
+          ButtonSegment(
+            value: p,
+            label: Text(p),
+            icon: Icon(Icons.circle, size: 12, color: colors.of(p)),
+          ),
+      ],
+      selected: {value},
+      onSelectionChanged: (s) => onChanged(s.single),
     );
   }
 }
